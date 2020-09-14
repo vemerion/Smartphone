@@ -1,0 +1,38 @@
+{
+  "catch_apple_sound": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "smartphone:catch_apple_sound",
+        "stream": false
+      }
+    ]
+  },
+  "click_sound": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "smartphone:click_sound",
+        "stream": false
+      }
+    ]
+  },
+  "jump_sound": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "smartphone:jump_sound",
+        "stream": false
+      }
+    ]
+  },
+  "write_sound": {
+    "category": "player",
+    "sounds": [
+      {
+        "name": "smartphone:write_sound",
+        "stream": false
+      }
+    ]
+  }
+}

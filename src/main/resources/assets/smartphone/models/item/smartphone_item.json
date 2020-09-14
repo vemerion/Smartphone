@@ -1,0 +1,39 @@
+{
+  "parent": "builtin/entity",
+  "gui_light": "front",
+  "textures": {
+    "layer0": "smartphone:entity/smartphone"
+  },
+  "display": {
+    "thirdperson_righthand": {
+        "rotation": [ 0, -90, 0 ],
+        "translation": [ -3, 3, 2 ],
+        "scale": [ 0.3, 0.3, 0.3 ]
+    },
+    "thirdperson_lefthand": {
+        "rotation": [ 0, -90, 0 ],
+        "translation": [ -3, 3, -2 ],
+        "scale": [ 0.3, 0.3, 0.3 ]
+    },
+    "firstperson_righthand": {
+        "rotation": [ -10, -90, 0 ],
+        "translation": [ 5, 3, -4],
+        "scale": [ 0.3, 0.3, 0.3 ]
+    },
+    "firstperson_lefthand": {
+        "rotation": [ -10, -90, 0 ],
+        "translation": [ 5, 5, -6],
+        "scale": [ 0.3, 0.3, 0.3 ]
+    },         
+    "gui": {
+      "rotation": [ 0, 0, 0 ],
+      "translation": [ 3.5, 3, 0.0 ],
+      "scale": [ 0.4, 0.4, 0.4]
+    },
+    "ground": {
+        "rotation": [ 0, 0, 0 ],
+        "translation": [ 0, 6, 0],
+        "scale":[ 0.3, 0.3, 0.3 ]
+    }  
+  }
+}
