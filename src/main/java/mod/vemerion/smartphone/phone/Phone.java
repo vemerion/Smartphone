@@ -12,6 +12,7 @@ import mod.vemerion.smartphone.phone.app.JukeboxApp;
 import mod.vemerion.smartphone.phone.app.RunnerApp;
 import mod.vemerion.smartphone.phone.app.SuggestionApp;
 import mod.vemerion.smartphone.phone.app.VillagerChatApp;
+import mod.vemerion.smartphone.phone.app.WallpaperApp;
 import mod.vemerion.smartphone.phone.utils.Button;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
@@ -59,6 +60,7 @@ public class Phone extends Screen {
 		apps.add(new VillagerChatApp(this));
 		apps.add(new RunnerApp(this));
 		apps.add(new SuggestionApp(this));
+		apps.add(new WallpaperApp(this));
 
 		// App button
 		appButtons = new ArrayList<>();
@@ -183,10 +185,11 @@ public class Phone extends Screen {
 		float windowWidth = window.getScaledWidth();
 		float windowHeight = window.getScaledHeight();
 
-		// Draw phone background
-		PhoneUtils.drawOnPhone(PHONE_BACKGROUND, 0, 0, PhoneUtils.APP_WIDTH, PhoneUtils.APP_HEIGHT);
 
 		if (atHomeScreen()) {
+			// Draw phone background
+			PhoneUtils.drawOnPhone(PHONE_BACKGROUND, 0, 0, PhoneUtils.APP_WIDTH, PhoneUtils.APP_HEIGHT);
+
 			// Buttons
 			for (Button button : appButtons) {
 				button.render();
