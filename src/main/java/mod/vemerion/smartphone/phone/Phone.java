@@ -61,6 +61,10 @@ public class Phone extends Screen {
 		apps.add(new RunnerApp(this));
 		apps.add(new SuggestionApp(this));
 		apps.add(new WallpaperApp(this));
+		
+		for (App app : apps) {
+			app.startup();
+		}
 
 		// App button
 		appButtons = new ArrayList<>();
@@ -98,6 +102,10 @@ public class Phone extends Screen {
 	public void onClose() {
 		if (activeApp != null)
 			activeApp.suspend();
+		
+		for (App app : apps) {
+			app.shutdown();
+		}
 		super.onClose();
 	}
 

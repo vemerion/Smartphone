@@ -40,9 +40,13 @@ public class JukeboxApp extends App {
 	private static final ResourceLocation JUKEBOX = new ResourceLocation("minecraft",
 			"textures/item/music_disc_13.png");
 	private static final ResourceLocation BACKGROUND = new ResourceLocation(Main.MODID,
-			"textures/gui/jukebox_background.png");
+			"textures/gui/jukebox_app/jukebox_background.png");
+
+	private static final ResourceLocation CANCEL_MUSIC = new ResourceLocation(Main.MODID,
+			"textures/gui/jukebox_app/cancel_music.png");
 
 	private List<Button> musicButtons;
+	private Button cancelMusicButton;
 	private JukeboxAppMusic activeMusic;
 
 	public JukeboxApp(Phone phone) {
@@ -53,13 +57,20 @@ public class JukeboxApp extends App {
 			float x = (i % 3) * BUTTON_SIZE + 1;
 			float y = (i / 3) * BUTTON_SIZE;
 			SoundEvent music = MUSIC[i];
-			musicButtons.add(new Button(new Rectangle(x, y, BUTTON_SIZE, BUTTON_SIZE), ICONS[i], phone, () -> {
+			musicButtons.add(new Button(new Rectangle(x, y, BUTTON_SIZE), ICONS[i], phone, () -> {
 				if (activeMusic != null)
 					activeMusic.stop();
 				activeMusic = new JukeboxAppMusic(Minecraft.getInstance().player, music);
 				Minecraft.getInstance().getSoundHandler().play(activeMusic);
 			}));
 		}
+
+		cancelMusicButton = new Button(
+				new Rectangle((MUSIC_COUNT % 3) * BUTTON_SIZE + 1, (MUSIC_COUNT / 3) * BUTTON_SIZE, BUTTON_SIZE),
+				CANCEL_MUSIC, phone, () -> {
+					if (activeMusic != null)
+						activeMusic.stop();
+				});
 	}
 
 	@Override
@@ -68,6 +79,8 @@ public class JukeboxApp extends App {
 
 		for (Button b : musicButtons)
 			b.tick();
+		
+		cancelMusicButton.tick();
 	}
 
 	@Override
@@ -76,10 +89,12 @@ public class JukeboxApp extends App {
 
 		for (Button b : musicButtons)
 			b.render();
+		
+		cancelMusicButton.render();
 	}
-	
+
 	@Override
-	public void suspend() {
+	public void shutdown() {
 		if (activeMusic != null)
 			activeMusic.stop();
 	}

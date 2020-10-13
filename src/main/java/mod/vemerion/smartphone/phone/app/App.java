@@ -34,4 +34,12 @@ public abstract class App {
 	public void resume() {
 	}
 
+	public void startup() {
+		
+	}
+	
+	public void shutdown() {
+		
+	}
+
 }
