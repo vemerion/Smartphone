@@ -8,6 +8,7 @@ import mod.vemerion.smartphone.phone.utils.Button;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.MathHelper;
 
 public class WallpaperApp extends App {
 
@@ -23,10 +24,14 @@ public class WallpaperApp extends App {
 			"textures/gui/wallpaper_app/paint_brush.png");
 	private static final ResourceLocation CAPTURE = new ResourceLocation(Main.MODID,
 			"textures/gui/wallpaper_app/capture_button.png");
+	private static final ResourceLocation CONFIRM = new ResourceLocation(Main.MODID,
+			"textures/gui/wallpaper_app/confirm_button.png");
+
 
 	private Button cameraButton;
 	private Button paintButton;
 	private App subApp;
+	private int[][] wallpaper;
 
 	public WallpaperApp(Phone phone) {
 		super(phone);
@@ -34,6 +39,14 @@ public class WallpaperApp extends App {
 				() -> subApp = new CameraApp(phone));
 		paintButton = new Button(new Rectangle(0, PhoneUtils.APP_HEIGHT / 2, PhoneUtils.APP_HEIGHT / 2), PAINT, phone,
 				() -> subApp = new PaintApp(phone));
+
+		wallpaper = new int[PhoneUtils.WALLPAPER_WIDTH][PhoneUtils.WALLPAPER_HEIGHT];
+
+		for (int x = 0; x < wallpaper.length; x++) {
+			for (int y = 0; y < wallpaper[x].length; y++) {
+				wallpaper[x][y] = Color.WHITE.getRGB();
+			}
+		}
 	}
 
 	@Override
@@ -77,8 +90,78 @@ public class WallpaperApp extends App {
 
 	private class PaintApp extends App {
 
+		private final ResourceLocation PAINT_BACKGROUND = new ResourceLocation(Main.MODID,
+				"textures/gui/wallpaper_app/paint_background.png");
+
+		private final float CANVAS_SIZE = 0.8f;
+		private final Color[] colors = new Color[] { Color.BLACK, Color.WHITE, Color.BLUE, Color.CYAN, Color.DARK_GRAY,
+				Color.GRAY, Color.GREEN, Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.YELLOW };
+
+		private Color brushColor = Color.BLACK;
+		private Button[] colorButtons;
+		private Button confirmButton;
+		private int confirmMessageTimer;
+
 		public PaintApp(Phone phone) {
 			super(phone);
+
+			colorButtons = new Button[colors.length];
+
+			int borderSize = 4;
+			float buttonX = PhoneUtils.APP_WIDTH * CANVAS_SIZE + borderSize;
+			for (int i = 0; i < colors.length; i++) {
+				Color buttonColor = colors[i];
+				colorButtons[i] = new Button(new Rectangle(buttonX, i * 16, 16), PhoneUtils.WHITE_PIXEL, phone,
+						() -> brushColor = buttonColor, colors[i]);
+			}
+
+			confirmButton = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 - 16, PhoneUtils.APP_HEIGHT * 0.84f, 32),
+					CONFIRM, phone, () -> {
+						confirmMessageTimer = 40;
+						phone.setWallpaper(wallpaper);
+					});
+		}
+
+		@Override
+		public void tick() {
+			super.tick();
+
+			if (phone.isLeftDown())
+				paintPixel(phone.getMouseX(), phone.getMouseY());
+
+			for (Button b : colorButtons)
+				b.tick();
+
+			confirmButton.tick();
+
+			confirmMessageTimer--;
+		}
+
+		private void paintPixel(float mouseX, float mouseY) {
+			int x = (int) MathHelper.lerp(mouseX / (CANVAS_SIZE * PhoneUtils.APP_WIDTH), 0, PhoneUtils.WALLPAPER_WIDTH);
+			int y = (int) MathHelper.lerp(mouseY / (CANVAS_SIZE * PhoneUtils.APP_HEIGHT), 0,
+					PhoneUtils.WALLPAPER_HEIGHT);
+
+			if (x < PhoneUtils.WALLPAPER_WIDTH && y < PhoneUtils.WALLPAPER_HEIGHT && x >= 0 && y >= 0) {
+				wallpaper[x][y] = brushColor.getRGB();
+			}
+		}
+
+		@Override
+		public void render() {
+			super.render();
+
+			PhoneUtils.drawWallpaper(wallpaper, 0, 0, CANVAS_SIZE * PhoneUtils.APP_WIDTH,
+					CANVAS_SIZE * PhoneUtils.APP_HEIGHT);
+
+			for (Button b : colorButtons)
+				b.render();
+
+			confirmButton.render();
+
+			if (confirmMessageTimer > 0) {
+				PhoneUtils.writeOnPhone("Wallpaper updated!", 3, 3, Color.BLACK, 0.5f);
+			}
 		}
 
 		@Override
@@ -88,7 +171,7 @@ public class WallpaperApp extends App {
 
 		@Override
 		public ResourceLocation getBackground() {
-			return BACKGROUND;
+			return PAINT_BACKGROUND;
 		}
 
 	}

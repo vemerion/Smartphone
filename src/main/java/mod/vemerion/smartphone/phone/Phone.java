@@ -49,6 +49,7 @@ public class Phone extends Screen {
 	private Set<Integer> keysPressed;
 	private Button homeButton;
 	private Button shutdownButton;
+	private int[][] wallpaper;
 
 	public Phone() {
 		super(new StringTextComponent(""));
@@ -85,6 +86,10 @@ public class Phone extends Screen {
 			activeApp = null;
 		});
 		shutdownButton = new Button(SHUTDOWN_BUTTON, SHUTDOWN_BUTTON_TEXTURE, this, () -> onClose());
+	}
+	
+	public void setWallpaper(int[][] wallpaper) {
+		this.wallpaper = wallpaper;
 	}
 
 	public void playSound(SoundEvent sound, float volume) {
@@ -196,8 +201,8 @@ public class Phone extends Screen {
 
 		if (atHomeScreen()) {
 			// Draw phone background
-			PhoneUtils.drawOnPhone(PHONE_BACKGROUND, 0, 0, PhoneUtils.APP_WIDTH, PhoneUtils.APP_HEIGHT);
-
+			drawBackground();
+			
 			// Buttons
 			for (Button button : appButtons) {
 				button.render();
@@ -215,6 +220,14 @@ public class Phone extends Screen {
 		shutdownButton.render();
 		homeButton.render();
 
+	}
+	
+	private void drawBackground() {
+		if (wallpaper == null) {
+			PhoneUtils.drawOnPhone(PHONE_BACKGROUND, 0, 0, PhoneUtils.APP_WIDTH, PhoneUtils.APP_HEIGHT);
+		} else {
+			PhoneUtils.drawWallpaper(wallpaper, 0, 0, PhoneUtils.APP_WIDTH, PhoneUtils.APP_HEIGHT);
+		}
 	}
 
 	@Override

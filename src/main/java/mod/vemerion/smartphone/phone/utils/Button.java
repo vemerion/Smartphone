@@ -7,17 +7,25 @@ import mod.vemerion.smartphone.phone.Phone;
 import net.minecraft.util.ResourceLocation;
 
 public class Button {
+	private static final Color HOVER_COLOR = new Color(100, 100, 100);
+
 	private Rectangle rectangle;
 	private ResourceLocation icon;
 	private Phone phone;
 	private Runnable runnable;
 	private boolean isLeftDownPrev;
+	private Color color = Color.WHITE;
 
 	public Button(Rectangle rectangle, ResourceLocation icon, Phone phone, Runnable runnable) {
 		this.rectangle = rectangle;
 		this.icon = icon;
 		this.phone = phone;
 		this.runnable = runnable;
+	}
+
+	public Button(Rectangle rectangle, ResourceLocation icon, Phone phone, Runnable runnable, Color color) {
+		this(rectangle, icon, phone, runnable);
+		this.color = color;
 	}
 
 	public void tick() {
@@ -29,9 +37,8 @@ public class Button {
 	}
 
 	public void render() {
-		Color color = rectangle.contains(phone.getMouseX(), phone.getMouseY()) ? new Color(100, 100, 100)
-				: new Color(255, 255, 255);
-		PhoneUtils.drawOnPhone(icon, rectangle.x, rectangle.y, rectangle.width, rectangle.height, color);
+		Color c = rectangle.contains(phone.getMouseX(), phone.getMouseY()) ? HOVER_COLOR : color;
+		PhoneUtils.drawOnPhone(icon, rectangle.x, rectangle.y, rectangle.width, rectangle.height, c);
 	}
 
 	private void onPress() {
