@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Set;
 
 import mod.vemerion.smartphone.Main;
+import mod.vemerion.smartphone.network.Network;
+import mod.vemerion.smartphone.network.SavePhoneStateMessage;
 import mod.vemerion.smartphone.phone.app.App;
 import mod.vemerion.smartphone.phone.app.CatchAppleApp;
 import mod.vemerion.smartphone.phone.app.JukeboxApp;
@@ -20,12 +22,17 @@ import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.common.util.INBTSerializable;
+import net.minecraftforge.fml.network.PacketDistributor;
 
-public class Phone extends Screen {
+public class Phone extends Screen implements INBTSerializable<CompoundNBT> {
 	private static final ResourceLocation PHONE_TEXTURE = new ResourceLocation(Main.MODID,
 			"textures/gui/smartphone.png");
 	private static final ResourceLocation PHONE_BACKGROUND = new ResourceLocation(Main.MODID,
@@ -111,6 +118,9 @@ public class Phone extends Screen {
 		for (App app : apps) {
 			app.shutdown();
 		}
+		
+		Network.INSTANCE.send(PacketDistributor.SERVER.noArg(), new SavePhoneStateMessage(serializeNBT()));
+		
 		super.onClose();
 	}
 
@@ -233,6 +243,25 @@ public class Phone extends Screen {
 	@Override
 	public boolean isPauseScreen() {
 		return false;
+	}
+
+	@Override
+	public CompoundNBT serializeNBT() {
+		CompoundNBT compound = new CompoundNBT();
+		ListNBT list = new ListNBT();
+		for (int i = 0; i < apps.size(); i++) {
+			list.add(apps.get(i).serializeNBT());
+		}
+		compound.put("apps", list);
+		return compound;
+	}
+
+	@Override
+	public void deserializeNBT(CompoundNBT nbt) {
+		ListNBT list = nbt.getList("apps", Constants.NBT.TAG_COMPOUND);
+		for (int i = 0; i < list.size(); i++) {
+			apps.get(i).deserializeNBT(list.getCompound(i));
+		}
 	}
 
 }

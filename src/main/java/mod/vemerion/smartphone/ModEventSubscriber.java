@@ -1,11 +1,17 @@
 package mod.vemerion.smartphone;
 
+import mod.vemerion.smartphone.capability.PhoneState;
+import mod.vemerion.smartphone.network.LoadPhoneStateMessage;
+import mod.vemerion.smartphone.network.Network;
+import mod.vemerion.smartphone.network.SavePhoneStateMessage;
 import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
+import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 
 @EventBusSubscriber(modid = Main.MODID, bus = EventBusSubscriber.Bus.MOD)
@@ -14,6 +20,17 @@ public class ModEventSubscriber {
 	@SubscribeEvent
 	public static void onRegisterItems(RegistryEvent.Register<Item> event) {
 		event.getRegistry().register(setup(new SmartphoneItem(), "smartphone_item"));
+	}
+	
+	@SubscribeEvent
+	public static void setup(FMLCommonSetupEvent event) {
+		CapabilityManager.INSTANCE.register(PhoneState.class, new PhoneState.PhoneStateStorage(), PhoneState::new);
+		
+		Network.INSTANCE.registerMessage(0, SavePhoneStateMessage.class, SavePhoneStateMessage::encode,
+				SavePhoneStateMessage::decode, SavePhoneStateMessage::handle);
+		Network.INSTANCE.registerMessage(1, LoadPhoneStateMessage.class, LoadPhoneStateMessage::encode,
+				LoadPhoneStateMessage::decode, LoadPhoneStateMessage::handle);
+
 	}
 	
 	@SubscribeEvent

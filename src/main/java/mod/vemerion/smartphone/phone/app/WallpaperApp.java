@@ -7,6 +7,7 @@ import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.Button;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 
@@ -27,11 +28,11 @@ public class WallpaperApp extends App {
 	private static final ResourceLocation CONFIRM = new ResourceLocation(Main.MODID,
 			"textures/gui/wallpaper_app/confirm_button.png");
 
-
 	private Button cameraButton;
 	private Button paintButton;
 	private App subApp;
 	private int[][] wallpaper;
+	private boolean hasCustomWallpaper;
 
 	public WallpaperApp(Phone phone) {
 		super(phone);
@@ -88,6 +89,45 @@ public class WallpaperApp extends App {
 		return BACKGROUND;
 	}
 
+	@Override
+	public void deserializeNBT(CompoundNBT nbt) {
+		if (nbt.contains("hasCustomWallpaper")) {
+			hasCustomWallpaper = nbt.getBoolean("hasCustomWallpaper");
+		}
+		if (nbt.contains("wallpaper")) {
+			toWallpaper(nbt.getIntArray("wallpaper"));
+			if (hasCustomWallpaper)
+				phone.setWallpaper(wallpaper);
+		}
+	}
+
+	@Override
+	public CompoundNBT serializeNBT() {
+		CompoundNBT compound = new CompoundNBT();
+		compound.putIntArray("wallpaper", fromWallpaper());
+		compound.putBoolean("hasCustomWallpaper", hasCustomWallpaper);
+		return compound;
+	}
+
+	private void toWallpaper(int[] arr) {
+		for (int i = 0; i < arr.length; i++) {
+			int x = i / PhoneUtils.WALLPAPER_HEIGHT;
+			int y = i % PhoneUtils.WALLPAPER_HEIGHT;
+			wallpaper[x][y] = arr[i];
+		}
+	}
+
+	private int[] fromWallpaper() {
+		int[] arr = new int[PhoneUtils.WALLPAPER_HEIGHT * PhoneUtils.WALLPAPER_WIDTH];
+		for (int x = 0; x < PhoneUtils.WALLPAPER_WIDTH; x++) {
+			for (int y = 0; y < PhoneUtils.WALLPAPER_HEIGHT; y++) {
+				int i = x * PhoneUtils.WALLPAPER_HEIGHT + y;
+				arr[i] = wallpaper[x][y];
+			}
+		}
+		return arr;
+	}
+
 	private class PaintApp extends App {
 
 		private final ResourceLocation PAINT_BACKGROUND = new ResourceLocation(Main.MODID,
@@ -119,6 +159,7 @@ public class WallpaperApp extends App {
 					CONFIRM, phone, () -> {
 						confirmMessageTimer = 40;
 						phone.setWallpaper(wallpaper);
+						hasCustomWallpaper = true;
 					});
 		}
 
@@ -184,7 +225,10 @@ public class WallpaperApp extends App {
 		public CameraApp(Phone phone) {
 			super(phone);
 			capture = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 - 16, PhoneUtils.APP_HEIGHT * 0.8f, 32),
-					CAPTURE, phone, () -> photoTakenTimer = 40);
+					CAPTURE, phone, () -> {
+						photoTakenTimer = 40;
+						hasCustomWallpaper = true;
+					});
 		}
 
 		@Override

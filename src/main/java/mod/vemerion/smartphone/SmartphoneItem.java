@@ -1,18 +1,19 @@
 package mod.vemerion.smartphone;
 
-import mod.vemerion.smartphone.phone.Phone;
+import mod.vemerion.smartphone.capability.PhoneState;
+import mod.vemerion.smartphone.network.LoadPhoneStateMessage;
+import mod.vemerion.smartphone.network.Network;
 import mod.vemerion.smartphone.renderer.PhoneRenderer;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.network.PacketDistributor;
 
 public class SmartphoneItem extends Item {
 
@@ -25,11 +26,16 @@ public class SmartphoneItem extends Item {
 		return 10;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	@Override
 	public ItemStack onItemUseFinish(ItemStack stack, World worldIn, LivingEntity entityLiving) {
-		if (worldIn.isRemote) {
-			Minecraft.getInstance().displayGuiScreen(new Phone());
+		if (entityLiving instanceof PlayerEntity) {
+			PlayerEntity player = (PlayerEntity) entityLiving;
+			if (!worldIn.isRemote) {
+				player.getCapability(PhoneState.CAPABILITY).ifPresent(s -> {
+					Network.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player),
+							new LoadPhoneStateMessage(s.serializeNBT()));
+				});
+			}
 		}
 		return stack;
 	}
