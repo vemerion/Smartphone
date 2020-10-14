@@ -7,8 +7,13 @@ import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.Button;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
+import net.minecraft.client.MainWindow;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.NativeImage;
+import net.minecraft.client.renderer.texture.NativeImage.PixelFormat;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.util.math.MathHelper;
 
 public class WallpaperApp extends App {
@@ -221,14 +226,60 @@ public class WallpaperApp extends App {
 
 		private Button capture;
 		private int photoTakenTimer;
+		private String photoTakenMessage = "Wallpaper Updated!";
 
 		public CameraApp(Phone phone) {
 			super(phone);
 			capture = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 - 16, PhoneUtils.APP_HEIGHT * 0.8f, 32),
-					CAPTURE, phone, () -> {
-						photoTakenTimer = 40;
-						hasCustomWallpaper = true;
-					});
+					CAPTURE, phone, () -> takePhoto());
+		}
+
+		private void takePhoto() {
+			photoTakenTimer = 40;
+			photoTakenMessage = "Wallpaper Updated!";
+			hasCustomWallpaper = true;
+			Minecraft mc = Minecraft.getInstance();
+			MainWindow window = mc.getMainWindow();
+
+			float windowWidth = window.getScaledWidth();
+			float windowHeight = window.getScaledHeight();
+			int bufferWidth = window.getFramebufferWidth();
+			int bufferHeight = window.getFramebufferHeight();
+
+			NativeImage photo = ScreenShotHelper.createScreenshot(bufferWidth, bufferHeight, mc.getFramebuffer());
+			if (photo.getFormat() != NativeImage.PixelFormat.RGBA) {
+				photoTakenMessage = "Failed to take photo!";
+				return;
+			}
+
+			int left = (int) ((windowWidth * 0.5f - PhoneUtils.SCREEN_HORIZONTAL_CENTER_OFFSET) / windowWidth
+					* bufferWidth);
+			int top = (int) ((windowHeight - PhoneUtils.SCREEN_BOTTON_OFFSET - PhoneUtils.SCREEN_HEIGHT) / windowHeight
+					* bufferHeight);
+			int right = (int) ((windowWidth * 0.5f + PhoneUtils.SCREEN_HORIZONTAL_CENTER_OFFSET) / windowWidth
+					* window.getFramebufferWidth());
+			int bottom = (int) ((windowHeight - PhoneUtils.SCREEN_BOTTON_OFFSET) / windowHeight
+					* bufferHeight);
+			
+			int pixelWidth = (int) ((right - left) / (float) PhoneUtils.WALLPAPER_WIDTH);
+			int pixelHeight = (int) ((bottom - top) / (float) PhoneUtils.WALLPAPER_HEIGHT);
+			
+			for (int x = 0; x < PhoneUtils.WALLPAPER_WIDTH; x++) {
+				for (int y = 0; y < PhoneUtils.WALLPAPER_HEIGHT; y++) {
+					int pixelX = MathHelper.clamp(left + x * pixelWidth, 0, photo.getWidth());
+					int pixelY = MathHelper.clamp(top + y * pixelHeight, 0, photo.getHeight());
+					wallpaper[x][y] = fromNativeImageColor(photo.getPixelRGBA(pixelX, pixelY));
+				}
+			}
+
+		}
+
+		private int fromNativeImageColor(int pixelRGBA) {
+			int a = NativeImage.getAlpha(pixelRGBA);
+			int r = NativeImage.getRed(pixelRGBA);
+			int g = NativeImage.getGreen(pixelRGBA);
+			int b = NativeImage.getBlue(pixelRGBA);
+			return new Color(r, g, b, a).getRGB();
 		}
 
 		@Override
@@ -245,7 +296,7 @@ public class WallpaperApp extends App {
 			capture.render();
 
 			if (photoTakenTimer > 0) {
-				PhoneUtils.writeOnPhone("Wallpaper updated!", 3, 3, Color.WHITE, 0.5f);
+				PhoneUtils.writeOnPhone(photoTakenMessage, 3, 3, Color.WHITE, 0.5f);
 			}
 		}
 
