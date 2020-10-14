@@ -10,7 +10,6 @@ import mod.vemerion.smartphone.phone.utils.Rectangle;
 import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.NativeImage;
-import net.minecraft.client.renderer.texture.NativeImage.PixelFormat;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.ScreenShotHelper;

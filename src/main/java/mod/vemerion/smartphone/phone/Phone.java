@@ -11,6 +11,7 @@ import mod.vemerion.smartphone.network.SavePhoneStateMessage;
 import mod.vemerion.smartphone.phone.app.App;
 import mod.vemerion.smartphone.phone.app.CatchAppleApp;
 import mod.vemerion.smartphone.phone.app.JukeboxApp;
+import mod.vemerion.smartphone.phone.app.MapApp;
 import mod.vemerion.smartphone.phone.app.RunnerApp;
 import mod.vemerion.smartphone.phone.app.SuggestionApp;
 import mod.vemerion.smartphone.phone.app.VillagerChatApp;
@@ -69,6 +70,7 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT> {
 		apps.add(new RunnerApp(this));
 		apps.add(new SuggestionApp(this));
 		apps.add(new WallpaperApp(this));
+		apps.add(new MapApp(this));
 		
 		for (App app : apps) {
 			app.startup();
