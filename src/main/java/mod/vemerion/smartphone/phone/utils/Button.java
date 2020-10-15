@@ -15,12 +15,18 @@ public class Button {
 	private Runnable runnable;
 	private boolean isLeftDownPrev;
 	private Color color = Color.WHITE;
+	private Rectangle texBounds;
 
-	public Button(Rectangle rectangle, ResourceLocation icon, Phone phone, Runnable runnable) {
+	public Button(Rectangle rectangle, ResourceLocation icon, Phone phone, Runnable runnable, Rectangle texBounds) {
 		this.rectangle = rectangle;
 		this.icon = icon;
 		this.phone = phone;
 		this.runnable = runnable;
+		this.texBounds = texBounds;
+	}
+
+	public Button(Rectangle rectangle, ResourceLocation icon, Phone phone, Runnable runnable) {
+		this(rectangle, icon, phone, runnable, new Rectangle(0, 0, 1));
 	}
 
 	public Button(Rectangle rectangle, ResourceLocation icon, Phone phone, Runnable runnable, Color color) {
@@ -38,7 +44,8 @@ public class Button {
 
 	public void render() {
 		Color c = rectangle.contains(phone.getMouseX(), phone.getMouseY()) ? HOVER_COLOR : color;
-		PhoneUtils.drawOnPhone(icon, rectangle.x, rectangle.y, rectangle.width, rectangle.height, c);
+		PhoneUtils.drawOnPhone(icon, rectangle.x, rectangle.y, rectangle.width, rectangle.height, texBounds.x,
+				texBounds.y, texBounds.width, texBounds.height, c);
 	}
 
 	private void onPress() {

@@ -37,7 +37,7 @@ public class SuggestionApp extends App {
 		for (int i = 0; i < words.length; i++) {
 			String word = words[i];
 			int letters = Math.min(totalLetters, word.length());
-			PhoneUtils.writeOnPhone(word.substring(0, letters), 5, 5 + i * 13, new Color(0, 0, 0), 1f);
+			PhoneUtils.writeOnPhone(font, word.substring(0, letters), 5, 5 + i * 13, new Color(0, 0, 0), 1f);
 			totalLetters -= letters;
 			if (totalLetters == 0)
 				break;

@@ -4,6 +4,7 @@ import java.util.Random;
 
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.util.INBTSerializable;
@@ -13,6 +14,7 @@ public abstract class App implements INBTSerializable<CompoundNBT> {
 	protected int ticksExisted;
 	protected Random rand = new Random();
 	protected Phone phone;
+	protected FontRenderer font;
 	
 	public App(Phone phone) {
 		this.phone = phone;
@@ -37,7 +39,7 @@ public abstract class App implements INBTSerializable<CompoundNBT> {
 	}
 
 	public void startup() {
-		
+		this.font = phone.getFont();
 	}
 	
 	public void shutdown() {

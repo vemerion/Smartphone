@@ -12,6 +12,7 @@ import mod.vemerion.smartphone.phone.app.App;
 import mod.vemerion.smartphone.phone.app.CatchAppleApp;
 import mod.vemerion.smartphone.phone.app.JukeboxApp;
 import mod.vemerion.smartphone.phone.app.MapApp;
+import mod.vemerion.smartphone.phone.app.MessageApp;
 import mod.vemerion.smartphone.phone.app.RunnerApp;
 import mod.vemerion.smartphone.phone.app.SuggestionApp;
 import mod.vemerion.smartphone.phone.app.VillagerChatApp;
@@ -21,6 +22,7 @@ import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
 import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
@@ -55,14 +57,17 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT> {
 	private App activeApp;
 	private List<Integer> mouseClicked;
 	private Set<Integer> keysPressed;
+	private Set<Character> charsTyped;
 	private Button homeButton;
 	private Button shutdownButton;
 	private int[][] wallpaper;
 
 	public Phone() {
 		super(new StringTextComponent(""));
+		
 		mouseClicked = new ArrayList<>();
 		keysPressed = new HashSet<>();
+		charsTyped = new HashSet<>();
 		apps = new ArrayList<>();
 		apps.add(new CatchAppleApp(this));
 		apps.add(new JukeboxApp(this));
@@ -71,6 +76,12 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT> {
 		apps.add(new SuggestionApp(this));
 		apps.add(new WallpaperApp(this));
 		apps.add(new MapApp(this));
+		apps.add(new MessageApp(this));
+	}
+	
+	@Override
+	protected void init() {
+		super.init();
 		
 		for (App app : apps) {
 			app.startup();
@@ -137,6 +148,18 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT> {
 		}
 		homeButton.tick();
 		shutdownButton.tick();
+		
+		charsTyped.clear();
+	}
+	
+	public Set<Character> getCharsTyped() {
+		return charsTyped;
+	}
+	
+	@Override
+	public boolean charTyped(char p_charTyped_1_, int p_charTyped_2_) {
+		charsTyped.add(p_charTyped_1_);
+		return super.charTyped(p_charTyped_1_, p_charTyped_2_);
 	}
 
 	@Override
@@ -240,6 +263,10 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT> {
 		} else {
 			PhoneUtils.drawWallpaper(wallpaper, 0, 0, PhoneUtils.APP_WIDTH, PhoneUtils.APP_HEIGHT);
 		}
+	}
+	
+	public FontRenderer getFont() {
+		return font;
 	}
 
 	@Override
