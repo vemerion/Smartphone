@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.network.Network;
@@ -35,7 +36,7 @@ import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.fml.network.PacketDistributor;
 
-public class Phone extends Screen implements INBTSerializable<CompoundNBT> {
+public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICommunicator {
 	private static final ResourceLocation PHONE_TEXTURE = new ResourceLocation(Main.MODID,
 			"textures/gui/smartphone.png");
 	private static final ResourceLocation PHONE_BACKGROUND = new ResourceLocation(Main.MODID,
@@ -61,9 +62,12 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT> {
 	private Button homeButton;
 	private Button shutdownButton;
 	private int[][] wallpaper;
+	private List<ICommunicator> communicators;
 
 	public Phone() {
 		super(new StringTextComponent(""));
+
+		communicators = new ArrayList<>();
 		
 		mouseClicked = new ArrayList<>();
 		keysPressed = new HashSet<>();
@@ -77,16 +81,7 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT> {
 		apps.add(new WallpaperApp(this));
 		apps.add(new MapApp(this));
 		apps.add(new MessageApp(this));
-	}
-	
-	@Override
-	protected void init() {
-		super.init();
 		
-		for (App app : apps) {
-			app.startup();
-		}
-
 		// App button
 		appButtons = new ArrayList<>();
 		for (int i = 0; i < apps.size(); i++) {
@@ -106,6 +101,15 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT> {
 			activeApp = null;
 		});
 		shutdownButton = new Button(SHUTDOWN_BUTTON, SHUTDOWN_BUTTON_TEXTURE, this, () -> onClose());
+	}
+	
+	@Override
+	protected void init() {
+		super.init();
+		
+		for (App app : apps) {
+			app.startup();
+		}
 	}
 	
 	public void setWallpaper(int[][] wallpaper) {
@@ -131,7 +135,7 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT> {
 		for (App app : apps) {
 			app.shutdown();
 		}
-		
+				
 		Network.INSTANCE.send(PacketDistributor.SERVER.noArg(), new SavePhoneStateMessage(serializeNBT()));
 		
 		super.onClose();
@@ -293,4 +297,13 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT> {
 		}
 	}
 
+	@Override
+	public void recieveAddContactAck(UUID uuid, String name, boolean success) {
+		for (ICommunicator communicator : communicators)
+			communicator.recieveAddContactAck(uuid, name, success);
+	}
+	
+	public void addCommunicator(ICommunicator communicator) {
+		communicators.add(communicator);
+	}
 }

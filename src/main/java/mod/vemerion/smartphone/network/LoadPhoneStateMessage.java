@@ -40,8 +40,8 @@ public class LoadPhoneStateMessage {
 					Minecraft mc = Minecraft.getInstance();
 					if (mc != null) {
 						Phone phone = new Phone();
-						phone.deserializeNBT(state);
 						Minecraft.getInstance().displayGuiScreen(phone);
+						phone.deserializeNBT(state);
 					}
 				}
 			};

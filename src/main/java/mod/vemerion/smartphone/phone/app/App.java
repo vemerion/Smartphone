@@ -38,6 +38,7 @@ public abstract class App implements INBTSerializable<CompoundNBT> {
 	public void resume() {
 	}
 
+	// Is called for example when going from or to fullscreen
 	public void startup() {
 		this.font = phone.getFont();
 	}

@@ -1,6 +1,8 @@
 package mod.vemerion.smartphone;
 
 import mod.vemerion.smartphone.capability.PhoneState;
+import mod.vemerion.smartphone.network.AddContactAckMessage;
+import mod.vemerion.smartphone.network.AddContactMessage;
 import mod.vemerion.smartphone.network.LoadPhoneStateMessage;
 import mod.vemerion.smartphone.network.Network;
 import mod.vemerion.smartphone.network.SavePhoneStateMessage;
@@ -30,6 +32,11 @@ public class ModEventSubscriber {
 				SavePhoneStateMessage::decode, SavePhoneStateMessage::handle);
 		Network.INSTANCE.registerMessage(1, LoadPhoneStateMessage.class, LoadPhoneStateMessage::encode,
 				LoadPhoneStateMessage::decode, LoadPhoneStateMessage::handle);
+		Network.INSTANCE.registerMessage(2, AddContactMessage.class, AddContactMessage::encode,
+				AddContactMessage::decode, AddContactMessage::handle);
+		Network.INSTANCE.registerMessage(3, AddContactAckMessage.class, AddContactAckMessage::encode,
+				AddContactAckMessage::decode, AddContactAckMessage::handle);
+
 
 	}
 	
