@@ -12,6 +12,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Hand;
 import net.minecraft.util.HandSide;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderHandEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -39,7 +40,7 @@ public class ClientForgeEventSubscriber {
 			PhoneRenderer renderer = new PhoneRenderer();
 			int maxDuration = itemStack.getUseDuration();
 			float duration = (float) maxDuration - ((float) player.getItemInUseCount() - partialTicks + 1.0f);
-			float progress = duration / maxDuration;
+			float progress = MathHelper.clamp(duration / maxDuration, 0, 1);
 			MatrixStack matrix = event.getMatrixStack();
 			matrix.push();
 			matrix.translate(offset * (2 - 2 * progress), -1 + progress * 0.95, -3 + progress * 0.85);
