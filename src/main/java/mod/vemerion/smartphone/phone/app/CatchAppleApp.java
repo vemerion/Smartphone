@@ -100,7 +100,7 @@ public class CatchAppleApp extends App {
 		}
 
 		// Score
-		PhoneUtils.writeOnPhone(font, "Score: " + score, 3, 190, new Color(255, 240, 0), 0.65f);
+		PhoneUtils.writeOnPhone(font, "Score: " + score, 3, 190, new Color(255, 240, 0), 0.65f, false);
 
 	}
 

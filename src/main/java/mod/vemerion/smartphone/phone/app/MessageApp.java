@@ -49,6 +49,7 @@ public class MessageApp extends App implements ICommunicator {
 	private Button leftButton;
 	private Button rightButton;
 	private int page;
+	private App subApp;
 
 	public MessageApp(Phone phone) {
 		super(phone);
@@ -86,50 +87,64 @@ public class MessageApp extends App implements ICommunicator {
 	}
 
 	@Override
+	public void resume() {
+		super.resume();
+		subApp = null;
+	}
+
+	@Override
 	public void tick() {
 		super.tick();
 
-		int start = page * CONTACT_BUTTONS_PER_PAGE;
-		for (int i = start; i < Math.min(start + 5, contacts.size()); i++) {
-			contacts.get(i).tickButton();
-		}
-
-		for (char c : phone.getCharsTyped()) {
-			if (SharedConstants.isAllowedCharacter(c)) {
-				addContactText += Character.toString(c);
+		if (subApp != null) {
+			subApp.tick();
+		} else {
+			int start = page * CONTACT_BUTTONS_PER_PAGE;
+			for (int i = start; i < Math.min(start + 5, contacts.size()); i++) {
+				contacts.get(i).tickButton();
 			}
-		}
 
-		if (phone.isKeyDown(GLFW.GLFW_KEY_BACKSPACE) && !addContactText.isEmpty()) {
-			addContactText = addContactText.substring(0, addContactText.length() - 1);
-		}
+			for (char c : phone.getCharsTyped()) {
+				if (SharedConstants.isAllowedCharacter(c)) {
+					addContactText += Character.toString(c);
+				}
+			}
 
-		addContactButton.tick();
-		leftButton.tick();
-		rightButton.tick();
-		toastTimer--;
+			if (phone.isKeyDown(GLFW.GLFW_KEY_BACKSPACE) && !addContactText.isEmpty()) {
+				addContactText = addContactText.substring(0, addContactText.length() - 1);
+			}
+
+			addContactButton.tick();
+			leftButton.tick();
+			rightButton.tick();
+			toastTimer--;
+		}
 	}
 
 	@Override
 	public void render() {
 		super.render();
 
-		int start = page * CONTACT_BUTTONS_PER_PAGE;
-		for (int i = start; i < Math.min(start + 5, contacts.size()); i++) {
-			contacts.get(i).renderButton();
+		if (subApp != null) {
+			subApp.render();
+		} else {
+			int start = page * CONTACT_BUTTONS_PER_PAGE;
+			for (int i = start; i < Math.min(start + 5, contacts.size()); i++) {
+				contacts.get(i).renderButton();
+			}
+
+			leftButton.render();
+			rightButton.render();
+
+			addContactButton.render();
+			int textX = ADD_CONTACT_BUTTON_X + ADD_CONTACT_BUTTON_SIZE + 1;
+			PhoneUtils.writeOnPhoneTrim(font, addContactText, textX, PhoneUtils.APP_HEIGHT - 20, Color.BLACK, 0.5f,
+					ADD_CONTACT_TEXT_WIDTH, true, false);
+
+			if (toastTimer > 0)
+				PhoneUtils.writeOnPhone(font, toast, PhoneUtils.APP_WIDTH / 2,
+						PhoneUtils.APP_HEIGHT - ADD_CONTACT_BUTTON_SIZE - 15, Color.BLACK, 0.75f, true);
 		}
-		
-		leftButton.render();
-		rightButton.render();
-
-		addContactButton.render();
-		int textX = ADD_CONTACT_BUTTON_X + ADD_CONTACT_BUTTON_SIZE + 1;
-		PhoneUtils.writeOnPhoneTrim(font, addContactText, textX, PhoneUtils.APP_HEIGHT - 20, Color.BLACK, 0.5f,
-				ADD_CONTACT_TEXT_WIDTH, true);
-
-		if (toastTimer > 0)
-			PhoneUtils.writeOnPhone(font, toast, 5, PhoneUtils.APP_HEIGHT - ADD_CONTACT_BUTTON_SIZE - 15, Color.BLACK,
-					0.75f);
 	}
 
 	@Override
@@ -145,7 +160,7 @@ public class MessageApp extends App implements ICommunicator {
 	@Override
 	public void recieveAddContactAck(UUID uuid, String name, boolean success) {
 		if (success) {
-			contacts.add(new ContactInfo(phone, uuid, name, new ArrayList<>(), new ArrayList<>()));
+			contacts.add(new ContactInfo(phone, uuid, name, new ArrayList<>()));
 			toast = "Contact added!";
 			toastTimer = 40;
 		} else {
@@ -154,25 +169,31 @@ public class MessageApp extends App implements ICommunicator {
 		}
 	}
 
+	private static final ResourceLocation CONVERSATION_BACKGROUND = new ResourceLocation(Main.MODID,
+			"textures/gui/message_app/conversation_background.png");
+	private static final int MESSAGE_LINE = 155;
+	private static final float MESSAGE_WIDTH = PhoneUtils.APP_WIDTH * 0.45f;
+
 	private class ContactInfo extends App {
 		private UUID uuid;
 		private String name;
-		private List<String> recievedText;
-		private List<String> sentText;
+		private List<String> messages;
 		private Button button;
 		private float y;
+		private String message;
 
-		public ContactInfo(Phone phone, UUID uuid, String name, List<String> recievedText, List<String> sentText) {
+		public ContactInfo(Phone phone, UUID uuid, String name, List<String> messages) {
 			super(phone);
 			this.uuid = uuid;
 			this.name = name;
-			this.recievedText = recievedText;
-			this.sentText = sentText;
+			this.messages = messages;
 			this.y = contacts.size() % CONTACT_BUTTONS_PER_PAGE * (CONTACT_BUTTON_SIZE + CONTACT_BUTTON_BORDER)
 					+ CONTACT_BUTTON_BORDER;
 			this.button = new ContactButton(new Rectangle(CONTACT_BUTTON_BORDER, y, CONTACT_BUTTON_SIZE), STEVE, phone,
 					() -> {
+						subApp = this;
 					});
+			this.message = "";
 
 			startup();
 		}
@@ -185,7 +206,53 @@ public class MessageApp extends App implements ICommunicator {
 			button.render();
 
 			PhoneUtils.writeOnPhoneTrim(font, name, CONTACT_BUTTON_SIZE + CONTACT_BUTTON_BORDER + 1, y + 1, Color.BLACK,
-					0.8f, PhoneUtils.APP_WIDTH - CONTACT_BUTTON_SIZE - 1, false);
+					0.8f, PhoneUtils.APP_WIDTH - CONTACT_BUTTON_SIZE - 1, false, false);
+		}
+
+		@Override
+		public void tick() {
+			super.tick();
+
+			for (char c : phone.getCharsTyped()) {
+				if (message.length() < 55 && SharedConstants.isAllowedCharacter(c)) {
+					message += Character.toString(c);
+				}
+			}
+
+			if (phone.isKeyDown(GLFW.GLFW_KEY_BACKSPACE) && !message.isEmpty()) {
+				message = message.substring(0, message.length() - 1);
+			}
+
+			if (phone.isKeyDown(GLFW.GLFW_KEY_ENTER) && !message.isEmpty()) {
+				messages.add("you:" + message);
+				message = "";
+			}
+		}
+
+		@Override
+		public void render() {
+			super.render();
+
+			float y = MESSAGE_LINE - 2;
+			for (int i = messages.size() - 1; i >= 0; i--) {
+				String m = messages.get(i);
+				boolean fromYou = m.startsWith("you:");
+				m = m.substring(4);
+				float x = fromYou ? PhoneUtils.APP_WIDTH / 2 + 2 : 2;
+				y -= 6 + font.getWordWrappedHeight(m, (int) (PhoneUtils.fromVirtualWidth(MESSAGE_WIDTH) / 0.5f)) * 0.5f;
+				
+				if (y < 20)
+					break;
+				
+				PhoneUtils.writeOnPhoneWrap(font, m, x, y, fromYou ? Color.BLUE : Color.GREEN, 0.5f, MESSAGE_WIDTH,
+						false);
+			}
+
+			PhoneUtils.writeOnPhoneTrim(font, name, PhoneUtils.APP_WIDTH / 2, 2, Color.BLACK, 1, PhoneUtils.APP_WIDTH,
+					false, true);
+
+			PhoneUtils.writeOnPhoneWrap(font, message, 1, MESSAGE_LINE + 8, Color.BLACK, 0.8f, PhoneUtils.APP_WIDTH - 2,
+					false);
 		}
 
 		@Override
@@ -195,7 +262,7 @@ public class MessageApp extends App implements ICommunicator {
 
 		@Override
 		public ResourceLocation getBackground() {
-			return BACKGROUND;
+			return CONVERSATION_BACKGROUND;
 		}
 
 	}

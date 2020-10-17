@@ -77,7 +77,7 @@ public class VillagerChatApp extends App {
 	private void printMsg(String msg, float x, float y, Color color, int maxLength) {
 		double count = Math.ceil(msg.length() / (float) maxLength) + 0.1;
 		for (int i = 0; i < count; i++) {
-			PhoneUtils.writeOnPhone(font, msg.substring(0, Math.min(maxLength, msg.length())), x, y + i * 8.5f, color, 0.75f);
+			PhoneUtils.writeOnPhone(font, msg.substring(0, Math.min(maxLength, msg.length())), x, y + i * 8.5f, color, 0.75f, false);
 			msg = msg.substring(Math.min(maxLength, msg.length()));
 		}
 	}

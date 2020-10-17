@@ -114,7 +114,8 @@ public class PhoneUtils {
 		}
 	}
 
-	public static void writeOnPhone(FontRenderer font, String text, float x, float y, Color color, float size) {
+	public static void writeOnPhone(FontRenderer font, String text, float x, float y, Color color, float size,
+			boolean center) {
 		MainWindow window = Minecraft.getInstance().getMainWindow();
 		float windowWidth = window.getScaledWidth();
 		float windowHeight = window.getScaledHeight();
@@ -124,7 +125,7 @@ public class PhoneUtils {
 		RenderSystem.pushMatrix();
 		MatrixStack matrix = new MatrixStack();
 		matrix.push();
-		matrix.translate(x, y, 0);
+		matrix.translate(x - (center ? font.getStringWidth(text) * size / 2 : 0), y, 0);
 		matrix.scale(size, size, size);
 		RenderSystem.multMatrix(matrix.getLast().getMatrix());
 
@@ -134,13 +135,26 @@ public class PhoneUtils {
 	}
 
 	public static void writeOnPhoneTrim(FontRenderer font, String text, float x, float y, Color color, float size,
-			float width, boolean reverse) {
+			float width, boolean reverse, boolean center) {
 		writeOnPhone(font, font.trimStringToWidth(text, (int) fromVirtualWidth(width / size), reverse), x, y, color,
-				size);
+				size, center);
+	}
+
+	public static void writeOnPhoneWrap(FontRenderer font, String text, float x, float y, Color color, float size,
+			float width, boolean center) {
+		String[] lines = font.wrapFormattedStringToWidth(text, (int) fromVirtualWidth(width / size)).split("\n");
+		for (int i = 0; i < lines.length; i++) {
+			writeOnPhone(font, lines[i], x, y + font.FONT_HEIGHT * i * size, color, size, center);
+		}
 	}
 
 	// converts virtual app width to window width
 	public static float fromVirtualWidth(float width) {
 		return width / APP_WIDTH * SCREEN_WIDTH;
+	}
+
+	// converts window width to virtual app width
+	public static float toVirtualWidth(float width) {
+		return width * APP_WIDTH / SCREEN_WIDTH;
 	}
 }

@@ -205,7 +205,7 @@ public class WallpaperApp extends App {
 			confirmButton.render();
 
 			if (confirmMessageTimer > 0) {
-				PhoneUtils.writeOnPhone(font, "Wallpaper updated!", 3, 3, Color.BLACK, 0.5f);
+				PhoneUtils.writeOnPhone(font, "Wallpaper updated!", 3, 3, Color.BLACK, 0.5f, false);
 			}
 		}
 
@@ -295,7 +295,7 @@ public class WallpaperApp extends App {
 			capture.render();
 
 			if (photoTakenTimer > 0) {
-				PhoneUtils.writeOnPhone(font, photoTakenMessage, 3, 3, Color.WHITE, 0.5f);
+				PhoneUtils.writeOnPhone(font, photoTakenMessage, 3, 3, Color.WHITE, 0.5f, false);
 			}
 		}
 

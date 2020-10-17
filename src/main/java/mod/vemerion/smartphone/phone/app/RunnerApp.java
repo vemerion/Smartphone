@@ -126,8 +126,8 @@ public class RunnerApp extends App {
 		
 		if (gameOver) {
 			PhoneUtils.drawOnPhone(FADE, 0, 0, 100, 200);
-			PhoneUtils.writeOnPhone(font, "Game", 18, 85, new Color(255, 50, 50), 2);
-			PhoneUtils.writeOnPhone(font, "Over", 18, 115, new Color(255, 50, 50), 2);
+			PhoneUtils.writeOnPhone(font, "Game", 18, 85, new Color(255, 50, 50), 2, false);
+			PhoneUtils.writeOnPhone(font, "Over", 18, 115, new Color(255, 50, 50), 2, false);
 		}
 
 	}
