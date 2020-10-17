@@ -1,8 +1,9 @@
-package mod.vemerion.smartphone.network;
+package mod.vemerion.smartphone.network.communication;
 
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import mod.vemerion.smartphone.network.Network;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;

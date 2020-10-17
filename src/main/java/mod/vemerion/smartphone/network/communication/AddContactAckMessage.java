@@ -1,4 +1,4 @@
-package mod.vemerion.smartphone.network;
+package mod.vemerion.smartphone.network.communication;
 
 import java.util.UUID;
 import java.util.function.Supplier;

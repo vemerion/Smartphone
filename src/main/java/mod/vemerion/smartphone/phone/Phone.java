@@ -303,6 +303,12 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 			communicator.recieveAddContactAck(uuid, name, success);
 	}
 	
+	@Override
+	public void recieveTextMessage(UUID source, String message) {
+		for (ICommunicator communicator : communicators)
+			communicator.recieveTextMessage(source, message);
+	}
+	
 	public void addCommunicator(ICommunicator communicator) {
 		communicators.add(communicator);
 	}

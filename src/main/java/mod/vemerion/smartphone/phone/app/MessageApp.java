@@ -168,6 +168,15 @@ public class MessageApp extends App implements ICommunicator {
 			toastTimer = 40;
 		}
 	}
+	
+	@Override
+	public void recieveTextMessage(UUID source, String message) {
+		for (ContactInfo contact : contacts) {
+			if (contact.uuid.equals(source)) {
+				contact.addMessage(message);
+			}
+		}
+	}
 
 	private static final ResourceLocation CONVERSATION_BACKGROUND = new ResourceLocation(Main.MODID,
 			"textures/gui/message_app/conversation_background.png");
@@ -198,6 +207,10 @@ public class MessageApp extends App implements ICommunicator {
 			startup();
 		}
 
+		public void addMessage(String msg) {
+			messages.add(msg);
+		}
+
 		private void tickButton() {
 			button.tick();
 		}
@@ -225,6 +238,7 @@ public class MessageApp extends App implements ICommunicator {
 
 			if (phone.isKeyDown(GLFW.GLFW_KEY_ENTER) && !message.isEmpty()) {
 				messages.add("you:" + message);
+				sendTextMessage(uuid, message);
 				message = "";
 			}
 		}
@@ -237,7 +251,7 @@ public class MessageApp extends App implements ICommunicator {
 			for (int i = messages.size() - 1; i >= 0; i--) {
 				String m = messages.get(i);
 				boolean fromYou = m.startsWith("you:");
-				m = m.substring(4);
+				m = fromYou ? m.substring(4) : m;
 				float x = fromYou ? PhoneUtils.APP_WIDTH / 2 + 2 : 2;
 				y -= 6 + font.getWordWrappedHeight(m, (int) (PhoneUtils.fromVirtualWidth(MESSAGE_WIDTH) / 0.5f)) * 0.5f;
 				
@@ -275,5 +289,4 @@ public class MessageApp extends App implements ICommunicator {
 		}
 
 	}
-
 }
