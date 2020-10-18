@@ -165,6 +165,8 @@ public class WallpaperApp extends App {
 						phone.setWallpaper(wallpaper);
 						hasCustomWallpaper = true;
 					});
+			
+			startup();
 		}
 
 		@Override
@@ -231,6 +233,8 @@ public class WallpaperApp extends App {
 			super(phone);
 			capture = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 - 16, PhoneUtils.APP_HEIGHT * 0.8f, 32),
 					CAPTURE, phone, () -> takePhoto());
+			
+			startup();
 		}
 
 		private void takePhoto() {
@@ -270,7 +274,9 @@ public class WallpaperApp extends App {
 					wallpaper[x][y] = fromNativeImageColor(photo.getPixelRGBA(pixelX, pixelY));
 				}
 			}
-
+			
+			phone.setWallpaper(wallpaper);
+			hasCustomWallpaper = true;
 		}
 
 		private int fromNativeImageColor(int pixelRGBA) {

@@ -18,5 +18,5 @@ public interface ICommunicator {
 		Network.INSTANCE.send(PacketDistributor.SERVER.noArg(), new SendTextMessage(destination, message));
 	}
 
-	void recieveTextMessage(UUID source, String message);
+	void recieveTextMessage(UUID source, String sourceName, String message);
 }

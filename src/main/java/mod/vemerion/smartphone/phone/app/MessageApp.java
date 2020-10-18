@@ -13,8 +13,12 @@ import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.Button;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.StringNBT;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SharedConstants;
+import net.minecraftforge.common.util.Constants;
 
 public class MessageApp extends App implements ICommunicator {
 
@@ -159,7 +163,7 @@ public class MessageApp extends App implements ICommunicator {
 
 	@Override
 	public void recieveAddContactAck(UUID uuid, String name, boolean success) {
-		if (success) {
+		if (success && !contacts.stream().anyMatch(contact -> contact.uuid.equals(uuid))) {
 			contacts.add(new ContactInfo(phone, uuid, name, new ArrayList<>()));
 			toast = "Contact added!";
 			toastTimer = 40;
@@ -168,13 +172,41 @@ public class MessageApp extends App implements ICommunicator {
 			toastTimer = 40;
 		}
 	}
-	
+
 	@Override
-	public void recieveTextMessage(UUID source, String message) {
+	public void recieveTextMessage(UUID source, String sourceName, String message) {
 		for (ContactInfo contact : contacts) {
 			if (contact.uuid.equals(source)) {
+				if (!sourceName.isEmpty())
+					contact.name = sourceName;
 				contact.addMessage(message);
+				return;
 			}
+		}
+
+		// Add new contact
+		List<String> messages = new ArrayList<>();
+		messages.add(message);
+		contacts.add(new ContactInfo(phone, source, !sourceName.isEmpty() ? sourceName : source.toString(), messages));
+	}
+
+	@Override
+	public CompoundNBT serializeNBT() {
+		CompoundNBT compound = new CompoundNBT();
+		ListNBT infos = new ListNBT();
+		for (ContactInfo contact : contacts)
+			infos.add(contact.serializeNBT());
+		compound.put("contacts", infos);
+		return compound;
+	}
+
+	@Override
+	public void deserializeNBT(CompoundNBT nbt) {
+		ListNBT infos = nbt.getList("contacts", Constants.NBT.TAG_COMPOUND);
+		for (int i = 0; i < infos.size(); i++) {
+			ContactInfo contact = new ContactInfo(phone);
+			contact.deserializeNBT(infos.getCompound(i));
+			contacts.add(contact);
 		}
 	}
 
@@ -191,11 +223,8 @@ public class MessageApp extends App implements ICommunicator {
 		private float y;
 		private String message;
 
-		public ContactInfo(Phone phone, UUID uuid, String name, List<String> messages) {
+		public ContactInfo(Phone phone) {
 			super(phone);
-			this.uuid = uuid;
-			this.name = name;
-			this.messages = messages;
 			this.y = contacts.size() % CONTACT_BUTTONS_PER_PAGE * (CONTACT_BUTTON_SIZE + CONTACT_BUTTON_BORDER)
 					+ CONTACT_BUTTON_BORDER;
 			this.button = new ContactButton(new Rectangle(CONTACT_BUTTON_BORDER, y, CONTACT_BUTTON_SIZE), STEVE, phone,
@@ -203,8 +232,16 @@ public class MessageApp extends App implements ICommunicator {
 						subApp = this;
 					});
 			this.message = "";
+			this.messages = new ArrayList<>();
 
 			startup();
+		}
+
+		public ContactInfo(Phone phone, UUID uuid, String name, List<String> messages) {
+			this(phone);
+			this.uuid = uuid;
+			this.name = name;
+			this.messages = messages;
 		}
 
 		public void addMessage(String msg) {
@@ -254,10 +291,10 @@ public class MessageApp extends App implements ICommunicator {
 				m = fromYou ? m.substring(4) : m;
 				float x = fromYou ? PhoneUtils.APP_WIDTH / 2 + 2 : 2;
 				y -= 6 + font.getWordWrappedHeight(m, (int) (PhoneUtils.fromVirtualWidth(MESSAGE_WIDTH) / 0.5f)) * 0.5f;
-				
+
 				if (y < 20)
 					break;
-				
+
 				PhoneUtils.writeOnPhoneWrap(font, m, x, y, fromYou ? Color.BLUE : Color.GREEN, 0.5f, MESSAGE_WIDTH,
 						false);
 			}
@@ -277,6 +314,29 @@ public class MessageApp extends App implements ICommunicator {
 		@Override
 		public ResourceLocation getBackground() {
 			return CONVERSATION_BACKGROUND;
+		}
+
+		@Override
+		public CompoundNBT serializeNBT() {
+			CompoundNBT compound = new CompoundNBT();
+			compound.putUniqueId("contactId", uuid);
+			compound.putString("contactName", name);
+			ListNBT msgs = new ListNBT();
+			for (int i = Math.max(0, messages.size() - 10); i < messages.size(); i++) {
+				msgs.add(StringNBT.valueOf(messages.get(i)));
+			}
+			compound.put("messages", msgs);
+			return compound;
+		}
+
+		@Override
+		public void deserializeNBT(CompoundNBT nbt) {
+			uuid = nbt.getUniqueId("contactId");
+			name = nbt.getString("contactName");
+			ListNBT msgs = nbt.getList("messages", Constants.NBT.TAG_STRING);
+			for (int i = 0; i < msgs.size(); i++) {
+				messages.add(msgs.getString(i));
+			}
 		}
 
 	}

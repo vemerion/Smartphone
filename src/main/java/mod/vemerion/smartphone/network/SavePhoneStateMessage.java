@@ -30,7 +30,7 @@ public class SavePhoneStateMessage {
 		context.enqueueWork(() -> {
 			PlayerEntity player = context.getSender();
 			if (player != null) {
-				player.getCapability(PhoneState.CAPABILITY).ifPresent(s -> s.deserializeNBT(state));
+				player.getCapability(PhoneState.CAPABILITY).ifPresent(s -> s.setState(state));
 			}
 		});
 	}

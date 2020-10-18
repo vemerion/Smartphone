@@ -8,6 +8,7 @@ import mod.vemerion.smartphone.network.communication.AddContactAckMessage;
 import mod.vemerion.smartphone.network.communication.AddContactMessage;
 import mod.vemerion.smartphone.network.communication.RecieveTextMessage;
 import mod.vemerion.smartphone.network.communication.SendTextMessage;
+import mod.vemerion.smartphone.network.communication.TextMessageAck;
 import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
@@ -42,6 +43,8 @@ public class ModEventSubscriber {
 				SendTextMessage::decode, SendTextMessage::handle);
 		Network.INSTANCE.registerMessage(5, RecieveTextMessage.class, RecieveTextMessage::encode,
 				RecieveTextMessage::decode, RecieveTextMessage::handle);
+		Network.INSTANCE.registerMessage(6,	TextMessageAck.class, TextMessageAck::encode,
+				TextMessageAck::decode, TextMessageAck::handle);
 	}
 	
 	@SubscribeEvent

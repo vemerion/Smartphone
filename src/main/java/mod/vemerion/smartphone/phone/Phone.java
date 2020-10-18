@@ -304,9 +304,9 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 	}
 	
 	@Override
-	public void recieveTextMessage(UUID source, String message) {
+	public void recieveTextMessage(UUID source, String sourceName, String message) {
 		for (ICommunicator communicator : communicators)
-			communicator.recieveTextMessage(source, message);
+			communicator.recieveTextMessage(source, sourceName, message);
 	}
 	
 	public void addCommunicator(ICommunicator communicator) {

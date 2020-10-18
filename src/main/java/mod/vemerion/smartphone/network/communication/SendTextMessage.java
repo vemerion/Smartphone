@@ -3,6 +3,9 @@ package mod.vemerion.smartphone.network.communication;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import com.mojang.authlib.GameProfile;
+
+import mod.vemerion.smartphone.capability.PhoneState;
 import mod.vemerion.smartphone.network.Network;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
@@ -36,8 +39,15 @@ public class SendTextMessage {
 			if (sender != null) {
 				ServerPlayerEntity reciever = sender.getServer().getPlayerList().getPlayerByUUID(destination);
 				if (reciever != null) {
+					UUID senderId = sender.getUniqueID();
+					UUID messageId = UUID.randomUUID();
+					GameProfile senderProfile = reciever.getServer().getPlayerProfileCache().getProfileByUUID(senderId);
+					String sourceName = senderProfile != null ? senderProfile.getName() : "";
 					Network.INSTANCE.send(PacketDistributor.PLAYER.with(() -> reciever),
-							new RecieveTextMessage(sender.getUniqueID(), message));
+							new RecieveTextMessage(sender.getUniqueID(), messageId, sourceName, message));
+					reciever.getCapability(PhoneState.CAPABILITY).ifPresent(s -> {
+						s.storeTextMessage(senderId, messageId, sourceName, message);
+					});
 				}
 			}
 		});
