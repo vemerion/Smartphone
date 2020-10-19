@@ -3,9 +3,13 @@ package mod.vemerion.smartphone.phone.app;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.lwjgl.glfw.GLFW;
+
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.ICommunicator;
@@ -13,6 +17,7 @@ import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.Button;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
+import net.minecraft.client.resources.SkinManager;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.StringNBT;
@@ -61,10 +66,6 @@ public class MessageApp extends App implements ICommunicator {
 		addContactText = "";
 		toast = "";
 
-//		Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> skins = phone.getMinecraft().getSkinManager()
-//		.loadSkinFromCache(new GameProfile(null, "dev"));
-//ResourceLocation location = phone.getMinecraft().getSkinManager()
-//		.loadSkin(skins.get(MinecraftProfileTexture.Type.SKIN), MinecraftProfileTexture.Type.SKIN);
 		contacts = new ArrayList<>();
 
 		addContactButton = new Button(new Rectangle(ADD_CONTACT_BUTTON_X,
@@ -204,8 +205,7 @@ public class MessageApp extends App implements ICommunicator {
 	public void deserializeNBT(CompoundNBT nbt) {
 		ListNBT infos = nbt.getList("contacts", Constants.NBT.TAG_COMPOUND);
 		for (int i = 0; i < infos.size(); i++) {
-			ContactInfo contact = new ContactInfo(phone);
-			contact.deserializeNBT(infos.getCompound(i));
+			ContactInfo contact = new ContactInfo(phone, infos.getCompound(i));
 			contacts.add(contact);
 		}
 	}
@@ -221,27 +221,28 @@ public class MessageApp extends App implements ICommunicator {
 		private List<String> messages;
 		private Button button;
 		private float y;
-		private String message;
+		private String message = "";
 
-		public ContactInfo(Phone phone) {
+		public ContactInfo(Phone phone, CompoundNBT compound) {
 			super(phone);
 			this.y = contacts.size() % CONTACT_BUTTONS_PER_PAGE * (CONTACT_BUTTON_SIZE + CONTACT_BUTTON_BORDER)
 					+ CONTACT_BUTTON_BORDER;
-			this.button = new ContactButton(new Rectangle(CONTACT_BUTTON_BORDER, y, CONTACT_BUTTON_SIZE), STEVE, phone,
-					() -> {
-						subApp = this;
-					});
-			this.message = "";
-			this.messages = new ArrayList<>();
-
+			deserializeNBT(compound);
 			startup();
 		}
 
 		public ContactInfo(Phone phone, UUID uuid, String name, List<String> messages) {
-			this(phone);
+			super(phone);
 			this.uuid = uuid;
 			this.name = name;
 			this.messages = messages;
+			this.y = contacts.size() % CONTACT_BUTTONS_PER_PAGE * (CONTACT_BUTTON_SIZE + CONTACT_BUTTON_BORDER)
+					+ CONTACT_BUTTON_BORDER;
+			this.button = new ContactButton(new Rectangle(CONTACT_BUTTON_BORDER, y, CONTACT_BUTTON_SIZE),
+					new GameProfile(uuid, null), phone, () -> {
+						subApp = this;
+					});
+			startup();
 		}
 
 		public void addMessage(String msg) {
@@ -334,18 +335,39 @@ public class MessageApp extends App implements ICommunicator {
 			uuid = nbt.getUniqueId("contactId");
 			name = nbt.getString("contactName");
 			ListNBT msgs = nbt.getList("messages", Constants.NBT.TAG_STRING);
+			messages = new ArrayList<>();
 			for (int i = 0; i < msgs.size(); i++) {
 				messages.add(msgs.getString(i));
 			}
+
+			this.button = new ContactButton(new Rectangle(CONTACT_BUTTON_BORDER, y, CONTACT_BUTTON_SIZE),
+					new GameProfile(uuid, null), phone, () -> {
+						subApp = this;
+					});
 		}
 
 	}
 
 	private class ContactButton extends Button {
 
-		public ContactButton(Rectangle rectangle, ResourceLocation icon, Phone phone, Runnable runnable) {
-			super(rectangle, icon != null ? icon : STEVE, phone, runnable,
-					new Rectangle(HEAD_SIZE, HEAD_SIZE, HEAD_SIZE));
+		public ContactButton(Rectangle rectangle, GameProfile profile, Phone phone, Runnable runnable) {
+			super(rectangle, STEVE, phone, runnable, new Rectangle(HEAD_SIZE, HEAD_SIZE, HEAD_SIZE));
+			loadIcon(profile);
+		}
+
+		private void loadIcon(GameProfile profile) {
+			if (profile.getId() == null)
+				return;
+			SkinManager skinManager = phone.getMinecraft().getSkinManager();
+			Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> skins = skinManager.loadSkinFromCache(profile);
+			if (skins.containsKey(MinecraftProfileTexture.Type.SKIN))
+				icon = skinManager.loadSkin(skins.get(MinecraftProfileTexture.Type.SKIN),
+						MinecraftProfileTexture.Type.SKIN);
+			else
+				skinManager.loadProfileTextures(profile, (type, location, texture) -> {
+					if (type == MinecraftProfileTexture.Type.SKIN)
+						icon = location;
+				}, true);
 		}
 
 	}

@@ -10,7 +10,7 @@ public class Button {
 	private static final Color HOVER_COLOR = new Color(100, 100, 100);
 
 	private Rectangle rectangle;
-	private ResourceLocation icon;
+	protected ResourceLocation icon;
 	private Phone phone;
 	private Runnable runnable;
 	private boolean isLeftDownPrev;
