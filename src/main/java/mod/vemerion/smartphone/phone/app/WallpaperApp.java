@@ -40,9 +40,9 @@ public class WallpaperApp extends App {
 
 	public WallpaperApp(Phone phone) {
 		super(phone);
-		cameraButton = new Button(new Rectangle(0, 0, PhoneUtils.APP_HEIGHT / 2), CAMERA, phone,
+		cameraButton = new Button(new Rectangle(0, 0, PhoneUtils.APP_HEIGHT / 2), () -> CAMERA, phone,
 				() -> subApp = new CameraApp(phone));
-		paintButton = new Button(new Rectangle(0, PhoneUtils.APP_HEIGHT / 2, PhoneUtils.APP_HEIGHT / 2), PAINT, phone,
+		paintButton = new Button(new Rectangle(0, PhoneUtils.APP_HEIGHT / 2, PhoneUtils.APP_HEIGHT / 2), () -> PAINT, phone,
 				() -> subApp = new PaintApp(phone));
 
 		wallpaper = new int[PhoneUtils.WALLPAPER_WIDTH][PhoneUtils.WALLPAPER_HEIGHT];
@@ -155,12 +155,12 @@ public class WallpaperApp extends App {
 			float buttonX = PhoneUtils.APP_WIDTH * CANVAS_SIZE + borderSize;
 			for (int i = 0; i < colors.length; i++) {
 				Color buttonColor = colors[i];
-				colorButtons[i] = new Button(new Rectangle(buttonX, i * 16, 16), PhoneUtils.WHITE_PIXEL, phone,
+				colorButtons[i] = new Button(new Rectangle(buttonX, i * 16, 16), () -> PhoneUtils.WHITE_PIXEL, phone,
 						() -> brushColor = buttonColor, colors[i]);
 			}
 
 			confirmButton = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 - 16, PhoneUtils.APP_HEIGHT * 0.84f, 32),
-					CONFIRM, phone, () -> {
+					() -> CONFIRM, phone, () -> {
 						confirmMessageTimer = 40;
 						phone.setWallpaper(wallpaper);
 						hasCustomWallpaper = true;
@@ -232,7 +232,7 @@ public class WallpaperApp extends App {
 		public CameraApp(Phone phone) {
 			super(phone);
 			capture = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 - 16, PhoneUtils.APP_HEIGHT * 0.8f, 32),
-					CAPTURE, phone, () -> takePhoto());
+					() -> CAPTURE, phone, () -> takePhoto());
 			
 			startup();
 		}

@@ -57,7 +57,8 @@ public class JukeboxApp extends App {
 			float x = (i % 3) * BUTTON_SIZE + 1;
 			float y = (i / 3) * BUTTON_SIZE;
 			SoundEvent music = MUSIC[i];
-			musicButtons.add(new Button(new Rectangle(x, y, BUTTON_SIZE), ICONS[i], phone, () -> {
+			ResourceLocation icon = ICONS[i];
+			musicButtons.add(new Button(new Rectangle(x, y, BUTTON_SIZE), () -> icon, phone, () -> {
 				if (activeMusic != null)
 					activeMusic.stop();
 				activeMusic = new JukeboxAppMusic(Minecraft.getInstance().player, music);
@@ -67,7 +68,7 @@ public class JukeboxApp extends App {
 
 		cancelMusicButton = new Button(
 				new Rectangle((MUSIC_COUNT % 3) * BUTTON_SIZE + 1, (MUSIC_COUNT / 3) * BUTTON_SIZE, BUTTON_SIZE),
-				CANCEL_MUSIC, phone, () -> {
+				() -> CANCEL_MUSIC, phone, () -> {
 					if (activeMusic != null)
 						activeMusic.stop();
 				});

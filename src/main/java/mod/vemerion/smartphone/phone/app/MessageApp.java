@@ -30,6 +30,8 @@ public class MessageApp extends App implements ICommunicator {
 	private static final float HEAD_SIZE = 1 / 8f;
 
 	private static final ResourceLocation ICON = new ResourceLocation(Main.MODID, "textures/gui/message_app/icon.png");
+	private static final ResourceLocation ICON_ALERT = new ResourceLocation(Main.MODID,
+			"textures/gui/message_app/icon_alert.png");
 	private static final ResourceLocation BACKGROUND = new ResourceLocation(Main.MODID,
 			"textures/gui/white_background.png");
 	private static final ResourceLocation ADD_CONTACT = new ResourceLocation(Main.MODID,
@@ -38,6 +40,10 @@ public class MessageApp extends App implements ICommunicator {
 			"textures/gui/message_app/left_button.png");
 	private static final ResourceLocation RIGHT_BUTTON = new ResourceLocation(Main.MODID,
 			"textures/gui/message_app/right_button.png");
+	private static final ResourceLocation ALERT = new ResourceLocation(Main.MODID,
+			"textures/gui/message_app/alert.png");
+	private static final ResourceLocation ADD_CONTACT_TEXT_FIELD = new ResourceLocation(Main.MODID,
+			"textures/gui/message_app/add_contact_text_field.png");
 
 	private static final int ADD_CONTACT_BUTTON_X = 2;
 	private static final int ADD_CONTACT_BUTTON_SIZE = 30;
@@ -59,6 +65,7 @@ public class MessageApp extends App implements ICommunicator {
 	private Button rightButton;
 	private int page;
 	private App subApp;
+	private boolean hasUnreadMessages;
 
 	public MessageApp(Phone phone) {
 		super(phone);
@@ -69,7 +76,7 @@ public class MessageApp extends App implements ICommunicator {
 		contacts = new ArrayList<>();
 
 		addContactButton = new Button(new Rectangle(ADD_CONTACT_BUTTON_X,
-				PhoneUtils.APP_HEIGHT - ADD_CONTACT_BUTTON_SIZE - 5, ADD_CONTACT_BUTTON_SIZE), ADD_CONTACT, phone,
+				PhoneUtils.APP_HEIGHT - ADD_CONTACT_BUTTON_SIZE - 5, ADD_CONTACT_BUTTON_SIZE), () -> ADD_CONTACT, phone,
 				() -> {
 					if (!addContactText.isEmpty()) {
 						sendAddContactMessage(addContactText);
@@ -78,12 +85,12 @@ public class MessageApp extends App implements ICommunicator {
 				});
 
 		rightButton = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 + 10, PhoneUtils.APP_HEIGHT * 0.67f, 20),
-				RIGHT_BUTTON, phone, () -> {
+				() -> RIGHT_BUTTON, phone, () -> {
 					if ((page + 1) * CONTACT_BUTTONS_PER_PAGE < contacts.size())
 						page++;
 				});
 		leftButton = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 - 30, PhoneUtils.APP_HEIGHT * 0.67f, 20),
-				LEFT_BUTTON, phone, () -> {
+				() -> LEFT_BUTTON, phone, () -> {
 					if (page > 0)
 						page--;
 				});
@@ -94,6 +101,12 @@ public class MessageApp extends App implements ICommunicator {
 	@Override
 	public void resume() {
 		super.resume();
+		hasUnreadMessages = false;
+	}
+
+	@Override
+	public void suspend() {
+		super.suspend();
 		subApp = null;
 	}
 
@@ -117,6 +130,11 @@ public class MessageApp extends App implements ICommunicator {
 
 			if (phone.isKeyDown(GLFW.GLFW_KEY_BACKSPACE) && !addContactText.isEmpty()) {
 				addContactText = addContactText.substring(0, addContactText.length() - 1);
+			}
+
+			if (phone.isKeyDown(GLFW.GLFW_KEY_ENTER) && !addContactText.isEmpty()) {
+				sendAddContactMessage(addContactText);
+				addContactText = "";
 			}
 
 			addContactButton.tick();
@@ -143,6 +161,9 @@ public class MessageApp extends App implements ICommunicator {
 
 			addContactButton.render();
 			int textX = ADD_CONTACT_BUTTON_X + ADD_CONTACT_BUTTON_SIZE + 1;
+			PhoneUtils.drawOnPhone(ADD_CONTACT_TEXT_FIELD, textX - 2, PhoneUtils.APP_HEIGHT - 20 - 2, ADD_CONTACT_TEXT_WIDTH + 2,
+					font.FONT_HEIGHT, 0, 0, 1, 1);
+
 			PhoneUtils.writeOnPhoneTrim(font, addContactText, textX, PhoneUtils.APP_HEIGHT - 20, Color.BLACK, 0.5f,
 					ADD_CONTACT_TEXT_WIDTH, true, false);
 
@@ -154,7 +175,7 @@ public class MessageApp extends App implements ICommunicator {
 
 	@Override
 	public ResourceLocation getIcon() {
-		return ICON;
+		return hasUnreadMessages ? ICON_ALERT : ICON;
 	}
 
 	@Override
@@ -176,6 +197,10 @@ public class MessageApp extends App implements ICommunicator {
 
 	@Override
 	public void recieveTextMessage(UUID source, String sourceName, String message) {
+		// Alert
+		if (!phone.isAppActive(this))
+			hasUnreadMessages = true;
+
 		for (ContactInfo contact : contacts) {
 			if (contact.uuid.equals(source)) {
 				if (!sourceName.isEmpty())
@@ -198,6 +223,7 @@ public class MessageApp extends App implements ICommunicator {
 		for (ContactInfo contact : contacts)
 			infos.add(contact.serializeNBT());
 		compound.put("contacts", infos);
+		compound.putBoolean("hasUnreadMessages", hasUnreadMessages);
 		return compound;
 	}
 
@@ -208,6 +234,8 @@ public class MessageApp extends App implements ICommunicator {
 			ContactInfo contact = new ContactInfo(phone, infos.getCompound(i));
 			contacts.add(contact);
 		}
+		if (nbt.contains("hasUnreadMessages"))
+			hasUnreadMessages = nbt.getBoolean("hasUnreadMessages");
 	}
 
 	private static final ResourceLocation CONVERSATION_BACKGROUND = new ResourceLocation(Main.MODID,
@@ -219,9 +247,10 @@ public class MessageApp extends App implements ICommunicator {
 		private UUID uuid;
 		private String name;
 		private List<String> messages;
-		private Button button;
+		private ContactButton button;
 		private float y;
 		private String message = "";
+		private boolean hasUnreadMessages = true;
 
 		public ContactInfo(Phone phone, CompoundNBT compound) {
 			super(phone);
@@ -241,12 +270,15 @@ public class MessageApp extends App implements ICommunicator {
 			this.button = new ContactButton(new Rectangle(CONTACT_BUTTON_BORDER, y, CONTACT_BUTTON_SIZE),
 					new GameProfile(uuid, null), phone, () -> {
 						subApp = this;
+						hasUnreadMessages = false;
 					});
 			startup();
 		}
 
 		public void addMessage(String msg) {
 			messages.add(msg);
+			if (subApp != this)
+				hasUnreadMessages = true;
 		}
 
 		private void tickButton() {
@@ -258,6 +290,9 @@ public class MessageApp extends App implements ICommunicator {
 
 			PhoneUtils.writeOnPhoneTrim(font, name, CONTACT_BUTTON_SIZE + CONTACT_BUTTON_BORDER + 1, y + 1, Color.BLACK,
 					0.8f, PhoneUtils.APP_WIDTH - CONTACT_BUTTON_SIZE - 1, false, false);
+
+			if (hasUnreadMessages)
+				button.renderAlert();
 		}
 
 		@Override
@@ -327,6 +362,7 @@ public class MessageApp extends App implements ICommunicator {
 				msgs.add(StringNBT.valueOf(messages.get(i)));
 			}
 			compound.put("messages", msgs);
+			compound.putBoolean("hasUnreadMessages", hasUnreadMessages);
 			return compound;
 		}
 
@@ -339,10 +375,13 @@ public class MessageApp extends App implements ICommunicator {
 			for (int i = 0; i < msgs.size(); i++) {
 				messages.add(msgs.getString(i));
 			}
+			if (nbt.contains("hasUnreadMessages"))
+				hasUnreadMessages = nbt.getBoolean("hasUnreadMessages");
 
 			this.button = new ContactButton(new Rectangle(CONTACT_BUTTON_BORDER, y, CONTACT_BUTTON_SIZE),
 					new GameProfile(uuid, null), phone, () -> {
 						subApp = this;
+						hasUnreadMessages = false;
 					});
 		}
 
@@ -351,7 +390,7 @@ public class MessageApp extends App implements ICommunicator {
 	private class ContactButton extends Button {
 
 		public ContactButton(Rectangle rectangle, GameProfile profile, Phone phone, Runnable runnable) {
-			super(rectangle, STEVE, phone, runnable, new Rectangle(HEAD_SIZE, HEAD_SIZE, HEAD_SIZE));
+			super(rectangle, () -> STEVE, phone, runnable, new Rectangle(HEAD_SIZE, HEAD_SIZE, HEAD_SIZE));
 			loadIcon(profile);
 		}
 
@@ -361,13 +400,17 @@ public class MessageApp extends App implements ICommunicator {
 			SkinManager skinManager = phone.getMinecraft().getSkinManager();
 			Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> skins = skinManager.loadSkinFromCache(profile);
 			if (skins.containsKey(MinecraftProfileTexture.Type.SKIN))
-				icon = skinManager.loadSkin(skins.get(MinecraftProfileTexture.Type.SKIN),
+				icon = () -> skinManager.loadSkin(skins.get(MinecraftProfileTexture.Type.SKIN),
 						MinecraftProfileTexture.Type.SKIN);
 			else
 				skinManager.loadProfileTextures(profile, (type, location, texture) -> {
 					if (type == MinecraftProfileTexture.Type.SKIN)
-						icon = location;
+						icon = () -> location;
 				}, true);
+		}
+
+		private void renderAlert() {
+			PhoneUtils.drawOnPhone(ALERT, rectangle.x, rectangle.y, rectangle.width, rectangle.height, 0, 0, 1, 1);
 		}
 
 	}

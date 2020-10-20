@@ -89,18 +89,18 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 			float y = (i / 3) * BUTTON_SIZE;
 			final App app = apps.get(i);
 			Rectangle rectangle = new Rectangle(x, y, BUTTON_SIZE, BUTTON_SIZE);
-			appButtons.add(new Button(rectangle, app.getIcon(), this, () -> {
+			appButtons.add(new Button(rectangle, () -> app.getIcon(), this, () -> {
 				activeApp = app;
 				app.resume();
 			}));
 		}
 
-		homeButton = new Button(HOME_BUTTON, HOME_BUTTON_TEXTURE, this, () -> {
+		homeButton = new Button(HOME_BUTTON, () -> HOME_BUTTON_TEXTURE, this, () -> {
 			if (activeApp != null)
 				activeApp.suspend();
 			activeApp = null;
 		});
-		shutdownButton = new Button(SHUTDOWN_BUTTON, SHUTDOWN_BUTTON_TEXTURE, this, () -> onClose());
+		shutdownButton = new Button(SHUTDOWN_BUTTON, () -> SHUTDOWN_BUTTON_TEXTURE, this, () -> onClose());
 	}
 	
 	@Override
@@ -125,6 +125,10 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 
 	private boolean atHomeScreen() {
 		return activeApp == null;
+	}
+	
+	public boolean isAppActive(App app) {
+		return activeApp == app;
 	}
 
 	@Override
