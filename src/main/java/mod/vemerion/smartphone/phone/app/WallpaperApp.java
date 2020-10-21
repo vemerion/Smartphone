@@ -2,6 +2,8 @@ package mod.vemerion.smartphone.phone.app;
 
 import java.awt.Color;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.Button;
@@ -73,11 +75,11 @@ public class WallpaperApp extends App {
 	}
 
 	@Override
-	public void render() {
+	public void render(MatrixStack matrix) {
 		if (subApp != null) {
-			subApp.render();
+			subApp.render(matrix);
 		} else {
-			super.render();
+			super.render(matrix);
 			cameraButton.render();
 			paintButton.render();
 		}
@@ -195,8 +197,8 @@ public class WallpaperApp extends App {
 		}
 
 		@Override
-		public void render() {
-			super.render();
+		public void render(MatrixStack matrix) {
+			super.render(matrix);
 
 			PhoneUtils.drawWallpaper(wallpaper, 0, 0, CANVAS_SIZE * PhoneUtils.APP_WIDTH,
 					CANVAS_SIZE * PhoneUtils.APP_HEIGHT);
@@ -207,7 +209,7 @@ public class WallpaperApp extends App {
 			confirmButton.render();
 
 			if (confirmMessageTimer > 0) {
-				PhoneUtils.writeOnPhone(font, "Wallpaper updated!", 3, 3, Color.BLACK, 0.5f, false);
+				PhoneUtils.writeOnPhone(matrix, font, "Wallpaper updated!", 3, 3, Color.BLACK, 0.5f, false);
 			}
 		}
 
@@ -296,12 +298,12 @@ public class WallpaperApp extends App {
 		}
 
 		@Override
-		public void render() {
-			super.render();
+		public void render(MatrixStack matrix) {
+			super.render(matrix);
 			capture.render();
 
 			if (photoTakenTimer > 0) {
-				PhoneUtils.writeOnPhone(font, photoTakenMessage, 3, 3, Color.WHITE, 0.5f, false);
+				PhoneUtils.writeOnPhone(matrix, font, photoTakenMessage, 3, 3, Color.WHITE, 0.5f, false);
 			}
 		}
 

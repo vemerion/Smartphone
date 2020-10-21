@@ -1,6 +1,7 @@
 package mod.vemerion.smartphone.phone.utils;
 
 import java.awt.Color;
+import java.util.List;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -13,7 +14,9 @@ import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldVertexBufferUploader;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.util.IReorderingProcessor;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.StringTextComponent;
 
 public class PhoneUtils {
 
@@ -49,28 +52,31 @@ public class PhoneUtils {
 	public static final int WALLPAPER_HEIGHT = 32; // The typical height in pixels of the phone wallpaper
 
 	public static void draw(ResourceLocation texture, float x, float y, float width, float height, float texX,
-			float texY, float texWidth, float texHeight) {
+			float texY, float texWidth, float texHeight, Color color) {
+		int r = color.getRed();
+		int g = color.getGreen();
+		int b = color.getBlue();
+		int a = color.getAlpha();
 		Minecraft mc = Minecraft.getInstance();
 		mc.getTextureManager().bindTexture(texture);
 		BufferBuilder builder = Tessellator.getInstance().getBuffer();
-		builder.begin(7, DefaultVertexFormats.POSITION_TEX);
-		builder.pos(x, y + height, Z).tex(texX, texY + texHeight).endVertex();
-		builder.pos(x + width, y + height, Z).tex(texX + texWidth, texY + texHeight).endVertex();
-		builder.pos(x + width, y, Z).tex(texX + texWidth, texY).endVertex();
-		builder.pos(x, y, Z).tex(texX, texY).endVertex();
+		builder.begin(7, DefaultVertexFormats.POSITION_COLOR_TEX);
+		builder.pos(x, y + height, Z).color(r, g, b, a).tex(texX, texY + texHeight).endVertex();
+		builder.pos(x + width, y + height, Z).color(r, g, b, a).tex(texX + texWidth, texY + texHeight).endVertex();
+		builder.pos(x + width, y, Z).color(r, g, b, a).tex(texX + texWidth, texY).endVertex();
+		builder.pos(x, y, Z).color(r, g, b, a).tex(texX, texY).endVertex();
 		builder.finishDrawing();
-		RenderSystem.enableAlphaTest();
 		RenderSystem.enableBlend();
 
 		WorldVertexBufferUploader.draw(builder);
 	}
 
 	public static void draw(ResourceLocation texture, float x, float y, float width, float height) {
-		draw(texture, x, y, width, height, 0, 0, 1, 1);
+		draw(texture, x, y, width, height, 0, 0, 1, 1, Color.WHITE);
 	}
 
 	public static void drawOnPhone(ResourceLocation texture, float x, float y, float width, float height, float texX,
-			float texY, float texWidth, float texHeight) {
+			float texY, float texWidth, float texHeight, Color color) {
 		MainWindow window = Minecraft.getInstance().getMainWindow();
 		float windowWidth = window.getScaledWidth();
 		float windowHeight = window.getScaledHeight();
@@ -79,14 +85,12 @@ public class PhoneUtils {
 		width = (width / APP_WIDTH) * SCREEN_WIDTH;
 		height = (height / APP_HEIGHT) * SCREEN_HEIGHT;
 
-		draw(texture, x, y, width, height, texX, texY, texWidth, texHeight);
+		draw(texture, x, y, width, height, texX, texY, texWidth, texHeight, color);
 	}
 
 	public static void drawOnPhone(ResourceLocation texture, float x, float y, float width, float height, float texX,
-			float texY, float texWidth, float texHeight, Color color) {
-		RenderSystem.color3f(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f);
-		drawOnPhone(texture, x, y, width, height, texX, texY, texWidth, texHeight);
-		RenderSystem.color3f(1, 1, 1);
+			float texY, float texWidth, float texHeight) {
+		drawOnPhone(texture, x, y, width, height, texX, texY, texWidth, texHeight, Color.WHITE);
 	}
 
 	public static void drawOnPhone(ResourceLocation texture, float x, float y, float width, float height) {
@@ -94,9 +98,7 @@ public class PhoneUtils {
 	}
 
 	public static void drawOnPhone(ResourceLocation texture, float x, float y, float width, float height, Color color) {
-		RenderSystem.color3f(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f);
-		drawOnPhone(texture, x, y, width, height);
-		RenderSystem.color3f(1, 1, 1);
+		drawOnPhone(texture, x, y, width, height, 0, 0, 1, 1, color);
 	}
 
 	public static void drawWallpaper(int[][] wallpaper, float left, float top, float width, float height) {
@@ -114,37 +116,45 @@ public class PhoneUtils {
 		}
 	}
 
-	public static void writeOnPhone(FontRenderer font, String text, float x, float y, Color color, float size,
-			boolean center) {
+	private static void writeOnPhone(MatrixStack matrix, FontRenderer font, IReorderingProcessor text, float x, float y,
+			Color color, float size, boolean center) {
 		MainWindow window = Minecraft.getInstance().getMainWindow();
 		float windowWidth = window.getScaledWidth();
 		float windowHeight = window.getScaledHeight();
 		x = windowWidth * 0.5f - SCREEN_HORIZONTAL_CENTER_OFFSET + (x / APP_WIDTH) * SCREEN_WIDTH;
 		y = windowHeight - SCREEN_BOTTON_OFFSET - SCREEN_HEIGHT + (y / APP_HEIGHT) * SCREEN_HEIGHT;
 
-		RenderSystem.pushMatrix();
-		MatrixStack matrix = new MatrixStack();
 		matrix.push();
-		matrix.translate(x - (center ? font.getStringWidth(text) * size / 2 : 0), y, 0);
+		matrix.translate(x - (center ? font.func_243245_a(text) * size / 2 : 0), y, 0);
 		matrix.scale(size, size, size);
-		RenderSystem.multMatrix(matrix.getLast().getMatrix());
 
-		font.drawString(text, 0, 0, color.getRGB());
+		font.func_238422_b_(matrix, text, 0, 0, color.getRGB());
 
-		RenderSystem.popMatrix();
+		matrix.pop();
 	}
 
-	public static void writeOnPhoneTrim(FontRenderer font, String text, float x, float y, Color color, float size,
-			float width, boolean reverse, boolean center) {
-		writeOnPhone(font, font.trimStringToWidth(text, (int) fromVirtualWidth(width / size), reverse), x, y, color,
-				size, center);
+	public static void writeOnPhone(MatrixStack matrix, FontRenderer font, String text, float x, float y, Color color,
+			float size, boolean center) {
+		List<IReorderingProcessor> lines = font.trimStringToWidth(new StringTextComponent(text), Integer.MAX_VALUE);
+		if (!lines.isEmpty())
+			writeOnPhone(matrix, font, lines.get(0), x, y, color, size, center);
 	}
 
-	public static void writeOnPhoneWrap(FontRenderer font, String text, float x, float y, Color color, float size,
-			float width, boolean center) {
-		String[] lines = font.wrapFormattedStringToWidth(text, (int) fromVirtualWidth(width / size)).split("\n");
-		for (int i = 0; i < lines.length; i++) {
-			writeOnPhone(font, lines[i], x, y + font.FONT_HEIGHT * i * size, color, size, center);
+	public static void writeOnPhoneTrim(MatrixStack matrix, FontRenderer font, String text, float x, float y,
+			Color color, float size, float width, boolean reverse, boolean center) {
+		int realWidth = (int) fromVirtualWidth(width / size);
+		List<IReorderingProcessor> lines = font
+				.trimStringToWidth(new StringTextComponent(font.func_238413_a_(text, realWidth, reverse)), realWidth);
+		if (!lines.isEmpty())
+			writeOnPhone(matrix, font, lines.get(0), x, y, color, size, center);
+	}
+
+	public static void writeOnPhoneWrap(MatrixStack matrix, FontRenderer font, String text, float x, float y,
+			Color color, float size, float width, boolean center) {
+		List<IReorderingProcessor> lines = font.trimStringToWidth(new StringTextComponent(text),
+				(int) fromVirtualWidth(width / size));
+		for (int i = 0; i < lines.size(); i++) {
+			writeOnPhone(matrix, font, lines.get(i), x, y + font.FONT_HEIGHT * i * size, color, size, center);
 		}
 	}
 

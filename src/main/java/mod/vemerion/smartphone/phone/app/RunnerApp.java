@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.lwjgl.glfw.GLFW;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
@@ -112,7 +114,7 @@ public class RunnerApp extends App {
 	}
 
 	@Override
-	public void render() {
+	public void render(MatrixStack matrix) {
 		PhoneUtils.drawOnPhone(getBackground(), 0, 0, PhoneUtils.APP_WIDTH, PhoneUtils.APP_HEIGHT, 0,
 				1 - ticksExisted / 100f % 100f, 1, 0.5f);
 
@@ -126,8 +128,8 @@ public class RunnerApp extends App {
 		
 		if (gameOver) {
 			PhoneUtils.drawOnPhone(FADE, 0, 0, 100, 200);
-			PhoneUtils.writeOnPhone(font, "Game", 18, 85, new Color(255, 50, 50), 2, false);
-			PhoneUtils.writeOnPhone(font, "Over", 18, 115, new Color(255, 50, 50), 2, false);
+			PhoneUtils.writeOnPhone(matrix, font, "Game", 18, 85, new Color(255, 50, 50), 2, false);
+			PhoneUtils.writeOnPhone(matrix, font, "Over", 18, 115, new Color(255, 50, 50), 2, false);
 		}
 
 	}

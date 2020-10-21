@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.lwjgl.glfw.GLFW;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
@@ -83,8 +85,8 @@ public class CatchAppleApp extends App {
 	}
 
 	@Override
-	public void render() {
-		super.render();
+	public void render(MatrixStack matrix) {
+		super.render(matrix);
 
 		for (Position apple : apples) {
 			PhoneUtils.drawOnPhone(APPLE, apple.x, apple.y, APPLE_SIZE, APPLE_SIZE);
@@ -100,7 +102,7 @@ public class CatchAppleApp extends App {
 		}
 
 		// Score
-		PhoneUtils.writeOnPhone(font, "Score: " + score, 3, 190, new Color(255, 240, 0), 0.65f, false);
+		PhoneUtils.writeOnPhone(matrix, font, "Score: " + score, 3, 190, new Color(255, 240, 0), 0.65f, false);
 
 	}
 

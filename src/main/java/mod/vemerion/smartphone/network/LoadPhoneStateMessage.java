@@ -39,12 +39,14 @@ public class LoadPhoneStateMessage {
 	public void handle(final Supplier<NetworkEvent.Context> supplier) {
 		final NetworkEvent.Context context = supplier.get();
 		context.setPacketHandled(true);
-		context.enqueueWork(() -> DistExecutor.runWhenOn(Dist.CLIENT, () -> LoadPhoneState.load(state, pendingMessages)));
+		context.enqueueWork(() -> DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> LoadPhoneState.load(state, pendingMessages)));
 	}
 
 	private static class LoadPhoneState {
-		private static Runnable load(CompoundNBT state, ListNBT pendingMessages) {
-			return new Runnable() {
+		private static DistExecutor.SafeRunnable load(CompoundNBT state, ListNBT pendingMessages) {
+			return new DistExecutor.SafeRunnable() {
+				private static final long serialVersionUID = 1L;
+
 				@Override
 				public void run() {
 					Minecraft mc = Minecraft.getInstance();

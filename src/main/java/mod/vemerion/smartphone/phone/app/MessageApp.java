@@ -10,6 +10,7 @@ import org.lwjgl.glfw.GLFW;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+import com.mojang.blaze3d.matrix.MatrixStack;
 
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.ICommunicator;
@@ -145,15 +146,15 @@ public class MessageApp extends App implements ICommunicator {
 	}
 
 	@Override
-	public void render() {
-		super.render();
+	public void render(MatrixStack matrix) {
+		super.render(matrix);
 
 		if (subApp != null) {
-			subApp.render();
+			subApp.render(matrix);
 		} else {
 			int start = page * CONTACT_BUTTONS_PER_PAGE;
 			for (int i = start; i < Math.min(start + 5, contacts.size()); i++) {
-				contacts.get(i).renderButton();
+				contacts.get(i).renderButton(matrix);
 			}
 
 			leftButton.render();
@@ -164,11 +165,11 @@ public class MessageApp extends App implements ICommunicator {
 			PhoneUtils.drawOnPhone(ADD_CONTACT_TEXT_FIELD, textX - 2, PhoneUtils.APP_HEIGHT - 20 - 2, ADD_CONTACT_TEXT_WIDTH + 2,
 					font.FONT_HEIGHT, 0, 0, 1, 1);
 
-			PhoneUtils.writeOnPhoneTrim(font, addContactText, textX, PhoneUtils.APP_HEIGHT - 20, Color.BLACK, 0.5f,
+			PhoneUtils.writeOnPhoneTrim(matrix, font, addContactText, textX, PhoneUtils.APP_HEIGHT - 20, Color.BLACK, 0.5f,
 					ADD_CONTACT_TEXT_WIDTH, true, false);
 
 			if (toastTimer > 0)
-				PhoneUtils.writeOnPhone(font, toast, PhoneUtils.APP_WIDTH / 2,
+				PhoneUtils.writeOnPhone(matrix, font, toast, PhoneUtils.APP_WIDTH / 2,
 						PhoneUtils.APP_HEIGHT - ADD_CONTACT_BUTTON_SIZE - 15, Color.BLACK, 0.75f, true);
 		}
 	}
@@ -285,10 +286,10 @@ public class MessageApp extends App implements ICommunicator {
 			button.tick();
 		}
 
-		private void renderButton() {
+		private void renderButton(MatrixStack matrix) {
 			button.render();
 
-			PhoneUtils.writeOnPhoneTrim(font, name, CONTACT_BUTTON_SIZE + CONTACT_BUTTON_BORDER + 1, y + 1, Color.BLACK,
+			PhoneUtils.writeOnPhoneTrim(matrix, font, name, CONTACT_BUTTON_SIZE + CONTACT_BUTTON_BORDER + 1, y + 1, Color.BLACK,
 					0.8f, PhoneUtils.APP_WIDTH - CONTACT_BUTTON_SIZE - 1, false, false);
 
 			if (hasUnreadMessages)
@@ -317,8 +318,8 @@ public class MessageApp extends App implements ICommunicator {
 		}
 
 		@Override
-		public void render() {
-			super.render();
+		public void render(MatrixStack matrix) {
+			super.render(matrix);
 
 			float y = MESSAGE_LINE - 2;
 			for (int i = messages.size() - 1; i >= 0; i--) {
@@ -331,14 +332,14 @@ public class MessageApp extends App implements ICommunicator {
 				if (y < 20)
 					break;
 
-				PhoneUtils.writeOnPhoneWrap(font, m, x, y, fromYou ? Color.BLUE : Color.GREEN, 0.5f, MESSAGE_WIDTH,
+				PhoneUtils.writeOnPhoneWrap(matrix, font, m, x, y, fromYou ? Color.BLUE : Color.GREEN, 0.5f, MESSAGE_WIDTH,
 						false);
 			}
 
-			PhoneUtils.writeOnPhoneTrim(font, name, PhoneUtils.APP_WIDTH / 2, 2, Color.BLACK, 1, PhoneUtils.APP_WIDTH,
+			PhoneUtils.writeOnPhoneTrim(matrix, font, name, PhoneUtils.APP_WIDTH / 2, 2, Color.BLACK, 1, PhoneUtils.APP_WIDTH,
 					false, true);
 
-			PhoneUtils.writeOnPhoneWrap(font, message, 1, MESSAGE_LINE + 8, Color.BLACK, 0.8f, PhoneUtils.APP_WIDTH - 2,
+			PhoneUtils.writeOnPhoneWrap(matrix, font, message, 1, MESSAGE_LINE + 8, Color.BLACK, 0.8f, PhoneUtils.APP_WIDTH - 2,
 					false);
 		}
 

@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.network.Network;
 import mod.vemerion.smartphone.network.SavePhoneStateMessage;
@@ -100,7 +102,7 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 				activeApp.suspend();
 			activeApp = null;
 		});
-		shutdownButton = new Button(SHUTDOWN_BUTTON, () -> SHUTDOWN_BUTTON_TEXTURE, this, () -> onClose());
+		shutdownButton = new Button(SHUTDOWN_BUTTON, () -> SHUTDOWN_BUTTON_TEXTURE, this, () -> closeScreen());
 	}
 	
 	@Override
@@ -231,12 +233,12 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 	}
 
 	@Override
-	public void render(int mouseX, int mouseY, float partialTicks) {
-		super.render(mouseX, mouseY, partialTicks);
-		render();
+	public void render(MatrixStack matrix, int mouseX, int mouseY, float partialTicks) {
+		super.render(matrix, mouseX, mouseY, partialTicks);
+		render(matrix);
 	}
 
-	private void render() {
+	private void render(MatrixStack matrix) {
 		MainWindow window = Minecraft.getInstance().getMainWindow();
 		float windowWidth = window.getScaledWidth();
 		float windowHeight = window.getScaledHeight();
@@ -251,7 +253,7 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 				button.render();
 			}
 		} else {
-			activeApp.render();
+			activeApp.render(matrix);
 		}
 
 		// Draw Phone

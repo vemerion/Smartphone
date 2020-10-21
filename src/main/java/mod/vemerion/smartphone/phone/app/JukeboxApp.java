@@ -3,6 +3,8 @@ package mod.vemerion.smartphone.phone.app;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.Button;
@@ -85,8 +87,8 @@ public class JukeboxApp extends App {
 	}
 
 	@Override
-	public void render() {
-		super.render();
+	public void render(MatrixStack matrix) {
+		super.render(matrix);
 
 		for (Button b : musicButtons)
 			b.render();

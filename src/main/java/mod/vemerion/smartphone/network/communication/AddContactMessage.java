@@ -38,7 +38,7 @@ public class AddContactMessage {
 				boolean success = false;
 				if (contact != null) {
 					uuid = contact.getUniqueID();
-					name = contact.getName().getFormattedText();
+					name = contact.getName().getString();
 					success = true;
 				}
 				Network.INSTANCE.send(PacketDistributor.PLAYER.with(() -> sender), new AddContactAckMessage(uuid, name, success));

@@ -35,12 +35,14 @@ public class AddContactAckMessage {
 	public void handle(final Supplier<NetworkEvent.Context> supplier) {
 		final NetworkEvent.Context context = supplier.get();
 		context.setPacketHandled(true);
-		context.enqueueWork(() -> DistExecutor.runWhenOn(Dist.CLIENT, () -> ProcessAddContactAck.process(uuid, name, success)));
+		context.enqueueWork(() -> DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> ProcessAddContactAck.process(uuid, name, success)));
 	}
 
 	private static class ProcessAddContactAck {
-		private static Runnable process(UUID uuid, String name, boolean success) {
-			return new Runnable() {
+		private static DistExecutor.SafeRunnable process(UUID uuid, String name, boolean success) {
+			return new DistExecutor.SafeRunnable() {
+				private static final long serialVersionUID = 1L;
+
 				@Override
 				public void run() {
 					Minecraft mc = Minecraft.getInstance();

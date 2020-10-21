@@ -18,7 +18,7 @@ public class JukeboxAppMusic extends TickableSound {
 	}
 	
 	public void stop() {
-		donePlaying = true;
+		finishPlaying();
 	}
 
 	@Override

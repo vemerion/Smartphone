@@ -1,5 +1,7 @@
 package mod.vemerion.smartphone.phone.app;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
@@ -78,8 +80,8 @@ public class MapApp extends App {
 	}
 
 	@Override
-	public void render() {
-		super.render();
+	public void render(MatrixStack matrix) {
+		super.render(matrix);
 
 		if (map != null)
 			PhoneUtils.drawOnPhone(map, 0, 0, PhoneUtils.APP_WIDTH, PhoneUtils.APP_HEIGHT);

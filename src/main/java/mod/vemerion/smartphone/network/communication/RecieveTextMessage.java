@@ -38,19 +38,23 @@ public class RecieveTextMessage {
 	}
 
 	public static RecieveTextMessage decode(final PacketBuffer buffer) {
-		return new RecieveTextMessage(buffer.readUniqueId(), buffer.readUniqueId(), buffer.readString(), buffer.readString());
+		return new RecieveTextMessage(buffer.readUniqueId(), buffer.readUniqueId(), buffer.readString(),
+				buffer.readString());
 	}
 
 	public void handle(final Supplier<NetworkEvent.Context> supplier) {
 		final NetworkEvent.Context context = supplier.get();
 		context.setPacketHandled(true);
-		context.enqueueWork(() -> DistExecutor.runWhenOn(Dist.CLIENT,
+		context.enqueueWork(() -> DistExecutor.safeRunWhenOn(Dist.CLIENT,
 				() -> ProcessTextMessage.process(source, messageId, sourceName, message)));
 	}
 
 	private static class ProcessTextMessage {
-		private static Runnable process(UUID source, UUID messageId, String sourceName, String message) {
-			return new Runnable() {
+		private static DistExecutor.SafeRunnable process(UUID source, UUID messageId, String sourceName,
+				String message) {
+			return new DistExecutor.SafeRunnable() {
+				private static final long serialVersionUID = 1L;
+
 				@Override
 				public void run() {
 					Minecraft mc = Minecraft.getInstance();

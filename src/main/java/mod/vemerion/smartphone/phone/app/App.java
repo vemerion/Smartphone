@@ -2,6 +2,8 @@ package mod.vemerion.smartphone.phone.app;
 
 import java.util.Random;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import net.minecraft.client.gui.FontRenderer;
@@ -28,7 +30,7 @@ public abstract class App implements INBTSerializable<CompoundNBT> {
 		ticksExisted++;
 	}
 	
-	public void render() {
+	public void render(MatrixStack matrix) {
 		PhoneUtils.drawOnPhone(getBackground(), 0, 0, PhoneUtils.APP_WIDTH, PhoneUtils.APP_HEIGHT);
 	}
 	

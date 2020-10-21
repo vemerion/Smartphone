@@ -2,6 +2,8 @@ package mod.vemerion.smartphone.phone.app;
 
 import java.awt.Color;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
@@ -31,13 +33,13 @@ public class SuggestionApp extends App {
 	}
 	
 	@Override
-	public void render() {
-		super.render();
+	public void render(MatrixStack matrix) {
+		super.render(matrix);
 		int totalLetters = ticksExisted / 2;
 		for (int i = 0; i < words.length; i++) {
 			String word = words[i];
 			int letters = Math.min(totalLetters, word.length());
-			PhoneUtils.writeOnPhone(font, word.substring(0, letters), 5, 5 + i * 13, new Color(0, 0, 0), 1f, false);
+			PhoneUtils.writeOnPhone(matrix, font, word.substring(0, letters), 5, 5 + i * 13, new Color(0, 0, 0), 1f, false);
 			totalLetters -= letters;
 			if (totalLetters == 0)
 				break;

@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.lwjgl.glfw.GLFW;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
@@ -58,9 +60,9 @@ public class VillagerChatApp extends App {
 	}
 
 	@Override
-	public void render() {
-		super.render();
-		printMsg(message, 2, 175, new Color(0, 180, 255), 15);
+	public void render(MatrixStack matrix) {
+		super.render(matrix);
+		printMsg(matrix, message, 2, 175, new Color(0, 180, 255), 15);
 
 		float y = 150;
 		for (int i = chat.size() - 1; i >= 0; i--) {
@@ -69,15 +71,15 @@ public class VillagerChatApp extends App {
 			y -= Math.ceil(msg.length() / (float) 8) * 8.5f + 10;
 			if (y < 2)
 				break;
-			printMsg(msg, fromPlayer ? 2 : 50, y, fromPlayer ? new Color(0, 180, 255) : new Color(0, 255, 180), 8);
+			printMsg(matrix, msg, fromPlayer ? 2 : 50, y, fromPlayer ? new Color(0, 180, 255) : new Color(0, 255, 180), 8);
 
 		}
 	}
 
-	private void printMsg(String msg, float x, float y, Color color, int maxLength) {
+	private void printMsg(MatrixStack matrix, String msg, float x, float y, Color color, int maxLength) {
 		double count = Math.ceil(msg.length() / (float) maxLength) + 0.1;
 		for (int i = 0; i < count; i++) {
-			PhoneUtils.writeOnPhone(font, msg.substring(0, Math.min(maxLength, msg.length())), x, y + i * 8.5f, color, 0.75f, false);
+			PhoneUtils.writeOnPhone(matrix, font, msg.substring(0, Math.min(maxLength, msg.length())), x, y + i * 8.5f, color, 0.75f, false);
 			msg = msg.substring(Math.min(maxLength, msg.length()));
 		}
 	}

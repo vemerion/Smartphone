@@ -6,7 +6,7 @@ import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.renderer.PhoneRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.AbstractClientPlayerEntity;
-import net.minecraft.client.renderer.Quaternion;
+import net.minecraft.client.renderer.model.ItemCameraTransforms.TransformType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -44,8 +44,8 @@ public class ClientForgeEventSubscriber {
 			MatrixStack matrix = event.getMatrixStack();
 			matrix.push();
 			matrix.translate(offset * (2 - 2 * progress), -1 + progress * 0.95, -3 + progress * 0.85);
-			matrix.rotate(new Quaternion(0, offset * (-90 + progress * 90), 0, true));
-			renderer.render(itemStack, matrix, event.getBuffers(), event.getLight(), OverlayTexture.NO_OVERLAY);
+			matrix.rotate(new net.minecraft.util.math.vector.Quaternion(0, offset * (-90 + progress * 90), 0, true));
+			renderer.func_239207_a_(itemStack, TransformType.NONE, matrix, event.getBuffers(), event.getLight(), OverlayTexture.NO_OVERLAY);
 			matrix.pop();
 		}
 	}
