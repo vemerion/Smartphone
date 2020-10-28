@@ -23,7 +23,7 @@ public class AddContactMessage {
 	}
 
 	public static AddContactMessage decode(final PacketBuffer buffer) {
-		return new AddContactMessage(buffer.readString());
+		return new AddContactMessage(buffer.readString(20));
 	}
 
 	public void handle(final Supplier<NetworkEvent.Context> supplier) {

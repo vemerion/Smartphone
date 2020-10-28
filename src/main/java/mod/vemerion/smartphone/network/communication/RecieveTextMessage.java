@@ -38,7 +38,7 @@ public class RecieveTextMessage {
 	}
 
 	public static RecieveTextMessage decode(final PacketBuffer buffer) {
-		return new RecieveTextMessage(buffer.readUniqueId(), buffer.readUniqueId(), buffer.readString(), buffer.readString());
+		return new RecieveTextMessage(buffer.readUniqueId(), buffer.readUniqueId(), buffer.readString(32767), buffer.readString(32767));
 	}
 
 	public void handle(final Supplier<NetworkEvent.Context> supplier) {

@@ -28,7 +28,7 @@ public class SendTextMessage {
 	}
 
 	public static SendTextMessage decode(final PacketBuffer buffer) {
-		return new SendTextMessage(buffer.readUniqueId(), buffer.readString());
+		return new SendTextMessage(buffer.readUniqueId(), buffer.readString(55));
 	}
 
 	public void handle(final Supplier<NetworkEvent.Context> supplier) {
