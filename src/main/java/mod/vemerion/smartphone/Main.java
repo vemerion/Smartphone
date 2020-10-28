@@ -22,7 +22,5 @@ public class Main {
 	public static final SoundEvent JUMP_SOUND = null;
 	
 	@ObjectHolder("smartphone:write_sound")
-	public static final SoundEvent WRITE_SOUND = null; 
-	
-    // FIXME: readString() in message handling is client-only                                                   
+	public static final SoundEvent WRITE_SOUND = null;                                                   
 }
