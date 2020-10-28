@@ -93,6 +93,7 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 			Rectangle rectangle = new Rectangle(x, y, BUTTON_SIZE, BUTTON_SIZE);
 			appButtons.add(new Button(rectangle, () -> app.getIcon(), this, () -> {
 				activeApp = app;
+				mouseClicked = new ArrayList<>();
 				app.resume();
 			}));
 		}

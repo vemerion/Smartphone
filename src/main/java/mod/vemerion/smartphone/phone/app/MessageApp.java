@@ -124,7 +124,7 @@ public class MessageApp extends App implements ICommunicator {
 			}
 
 			for (char c : phone.getCharsTyped()) {
-				if (SharedConstants.isAllowedCharacter(c)) {
+				if (SharedConstants.isAllowedCharacter(c) && addContactText.length() < 20) {
 					addContactText += Character.toString(c);
 				}
 			}

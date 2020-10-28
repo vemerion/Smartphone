@@ -29,7 +29,7 @@ public class AddContactAckMessage {
 	}
 
 	public static AddContactAckMessage decode(final PacketBuffer buffer) {
-		return new AddContactAckMessage(buffer.readUniqueId(), buffer.readString(), buffer.readBoolean());
+		return new AddContactAckMessage(buffer.readUniqueId(), buffer.readString(32767), buffer.readBoolean());
 	}
 
 	public void handle(final Supplier<NetworkEvent.Context> supplier) {
