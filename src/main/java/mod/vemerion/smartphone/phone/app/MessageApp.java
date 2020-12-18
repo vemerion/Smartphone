@@ -326,7 +326,7 @@ public class MessageApp extends App implements ICommunicator {
 				boolean fromYou = m.startsWith("you:");
 				m = fromYou ? m.substring(4) : m;
 				float x = fromYou ? PhoneUtils.APP_WIDTH / 2 + 2 : 2;
-				y -= 6 + font.getWordWrappedHeight(m, (int) (PhoneUtils.fromVirtualWidth(MESSAGE_WIDTH) / 0.5f)) * 0.5f;
+				y -= 6 + PhoneUtils.textHeight(font, m, 0.5f, MESSAGE_WIDTH);
 
 				if (y < 20)
 					break;

@@ -144,8 +144,12 @@ public class PhoneUtils {
 			float width, boolean center) {
 		String[] lines = font.wrapFormattedStringToWidth(text, (int) fromVirtualWidth(width / size)).split("\n");
 		for (int i = 0; i < lines.length; i++) {
-			writeOnPhone(font, lines[i], x, y + font.FONT_HEIGHT * i * size, color, size, center);
+			writeOnPhone(font, lines[i], x, y + font.FONT_HEIGHT * i * size * 1.3f, color, size, center);
 		}
+	}
+	
+	public static int textHeight(FontRenderer font, String text, float size, float width) {
+		return (int) (font.getWordWrappedHeight(text, (int) (PhoneUtils.fromVirtualWidth(width) / size)) * size * 1.3f);
 	}
 
 	// converts virtual app width to window width

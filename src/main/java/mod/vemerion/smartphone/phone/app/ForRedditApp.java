@@ -1,5 +1,6 @@
 package mod.vemerion.smartphone.phone.app;
 
+import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -7,17 +8,21 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
+import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.JSONUtils;
 import net.minecraft.util.ResourceLocation;
@@ -36,9 +41,11 @@ public class ForRedditApp extends App {
 	private String token;
 	private long timestamp;
 	private ConnectionThread thread;
+	List<String> posts;
 
 	public ForRedditApp(Phone phone) {
 		super(phone);
+		posts = new ArrayList<>();
 	}
 
 	@Override
@@ -66,7 +73,34 @@ public class ForRedditApp extends App {
 		if (thread != null && !thread.isAlive()) {
 			token = thread.token;
 			timestamp = thread.timestamp;
+			if (thread.data != null) {
+				createPosts(thread.data);
+			}
 			thread = null;
+		}
+	}
+
+	@Override
+	public void render() {
+		super.render();
+
+		int y = 1;
+		for (String post : posts) {
+			int height = PhoneUtils.textHeight(font, post, 0.5f, PhoneUtils.APP_WIDTH);
+			if (y + height > PhoneUtils.APP_HEIGHT)
+				break;
+			PhoneUtils.writeOnPhoneWrap(font, post, 1, y, Color.BLACK, 0.5f, PhoneUtils.APP_WIDTH, false);
+			y += height + 10;
+
+		}
+	}
+
+	private void createPosts(String data) {
+		JsonObject json = JSONUtils.getJsonObject(JSONUtils.fromJson(data), "data");
+		posts = new ArrayList<>();
+		for (JsonElement e : JSONUtils.getJsonArray(json, "children")) {
+			JsonObject o = JSONUtils.getJsonObject(JSONUtils.getJsonObject(e, "post"), "data");
+			posts.add(JSONUtils.getString(o, "title"));
 		}
 	}
 
@@ -103,6 +137,7 @@ public class ForRedditApp extends App {
 		private String token;
 		private UUID id;
 		private long timestamp;
+		private String data;
 
 		private ConnectionThread(String token, UUID id, long timestamp) {
 			this.token = token;
@@ -177,6 +212,7 @@ public class ForRedditApp extends App {
 
 					inputReader.close();
 					System.out.println(response.toString());
+					data = response.toString();
 				}
 			}
 		}
