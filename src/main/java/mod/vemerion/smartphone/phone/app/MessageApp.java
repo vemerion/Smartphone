@@ -37,9 +37,9 @@ public class MessageApp extends App implements ICommunicator {
 	private static final ResourceLocation ADD_CONTACT = new ResourceLocation(Main.MODID,
 			"textures/gui/message_app/add_contact.png");
 	private static final ResourceLocation LEFT_BUTTON = new ResourceLocation(Main.MODID,
-			"textures/gui/message_app/left_button.png");
+			"textures/gui/left_button.png");
 	private static final ResourceLocation RIGHT_BUTTON = new ResourceLocation(Main.MODID,
-			"textures/gui/message_app/right_button.png");
+			"textures/gui/right_button.png");
 	private static final ResourceLocation ALERT = new ResourceLocation(Main.MODID,
 			"textures/gui/message_app/alert.png");
 	private static final ResourceLocation ADD_CONTACT_TEXT_FIELD = new ResourceLocation(Main.MODID,

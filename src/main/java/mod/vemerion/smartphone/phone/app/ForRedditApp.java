@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +23,10 @@ import com.google.gson.JsonParser;
 
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
+import mod.vemerion.smartphone.phone.utils.Button;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
+import mod.vemerion.smartphone.phone.utils.Rectangle;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.JSONUtils;
 import net.minecraft.util.ResourceLocation;
@@ -35,17 +39,37 @@ public class ForRedditApp extends App {
 			"textures/gui/white_background.png");
 	private static final ResourceLocation ICON = new ResourceLocation(Main.MODID,
 			"textures/gui/for_reddit_app/icon.png");
+	private static final ResourceLocation LEFT_BUTTON = new ResourceLocation(Main.MODID,
+			"textures/gui/left_button.png");
+	private static final ResourceLocation RIGHT_BUTTON = new ResourceLocation(Main.MODID,
+			"textures/gui/right_button.png");
+
 	private static final long HOUR = 1000 * 60 * 60;
 
 	private UUID id;
 	private String token;
 	private long timestamp;
 	private ConnectionThread thread;
-	List<String> posts;
+	List<List<Post>> pages;
+	App subApp;
+	int page;
+	private Button leftButton;
+	private Button rightButton;
 
 	public ForRedditApp(Phone phone) {
 		super(phone);
-		posts = new ArrayList<>();
+		pages = new ArrayList<>();
+		
+		rightButton = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 + 10, PhoneUtils.APP_HEIGHT * 0.9f, 20),
+				() -> RIGHT_BUTTON, phone, () -> {
+					if (page < pages.size() - 1)
+						page++;
+				});
+		leftButton = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 - 30, PhoneUtils.APP_HEIGHT * 0.9f, 20),
+				() -> LEFT_BUTTON, phone, () -> {
+					if (page > 0)
+						page--;
+				});
 	}
 
 	@Override
@@ -60,6 +84,9 @@ public class ForRedditApp extends App {
 
 	@Override
 	public void resume() {
+		subApp = null;
+		pages = new ArrayList<>();
+		page = 0;
 		if (id == null)
 			id = UUID.randomUUID();
 		thread = new ConnectionThread(token, id, timestamp);
@@ -70,13 +97,23 @@ public class ForRedditApp extends App {
 	public void tick() {
 		super.tick();
 
-		if (thread != null && !thread.isAlive()) {
-			token = thread.token;
-			timestamp = thread.timestamp;
-			if (thread.data != null) {
-				createPosts(thread.data);
+		if (subApp != null) {
+			subApp.tick();
+		} else {
+			if (thread != null && !thread.isAlive()) {
+				token = thread.token;
+				timestamp = thread.timestamp;
+				if (thread.data != null) {
+					createPosts(thread.data);
+				}
+				thread = null;
 			}
-			thread = null;
+
+			if (!pages.isEmpty())
+				for (Post p : pages.get(page))
+					p.tickButton();
+			leftButton.tick();
+			rightButton.tick();
 		}
 	}
 
@@ -84,23 +121,34 @@ public class ForRedditApp extends App {
 	public void render() {
 		super.render();
 
-		int y = 1;
-		for (String post : posts) {
-			int height = PhoneUtils.textHeight(font, post, 0.5f, PhoneUtils.APP_WIDTH);
-			if (y + height > PhoneUtils.APP_HEIGHT)
-				break;
-			PhoneUtils.writeOnPhoneWrap(font, post, 1, y, Color.BLACK, 0.5f, PhoneUtils.APP_WIDTH, false);
-			y += height + 10;
-
+		if (subApp != null) {
+			subApp.render();
+		} else {
+			if (!pages.isEmpty())
+				for (Post p : pages.get(page))
+					p.renderButton();
+			leftButton.render();
+			rightButton.render();
 		}
 	}
 
 	private void createPosts(String data) {
 		JsonObject json = JSONUtils.getJsonObject(JSONUtils.fromJson(data), "data");
-		posts = new ArrayList<>();
+		pages = new ArrayList<>();
+		pages.add(new ArrayList<>());
+		int i = 0;
+		int y = 2;
 		for (JsonElement e : JSONUtils.getJsonArray(json, "children")) {
 			JsonObject o = JSONUtils.getJsonObject(JSONUtils.getJsonObject(e, "post"), "data");
-			posts.add(JSONUtils.getString(o, "title"));
+			String title = JSONUtils.getString(o, "title");
+			int height = PhoneUtils.textHeight(font, title, 0.5f, PhoneUtils.APP_WIDTH) + 10;
+			if (y + height > PhoneUtils.APP_HEIGHT * 0.9) {
+				pages.add(new ArrayList<>());
+				i++;
+				y = 2;
+			}
+			pages.get(i).add(new Post(phone, JSONUtils.getString(o, "title"), y));
+			y += height;
 		}
 	}
 
@@ -123,6 +171,61 @@ public class ForRedditApp extends App {
 		if (nbt.contains("token")) {
 			token = nbt.getString("token");
 			timestamp = nbt.getLong("timestamp");
+		}
+	}
+
+	private class Post extends App {
+		private Button button;
+
+		public Post(Phone phone, String title, int y) {
+			super(phone);
+			startup();
+			button = new PostButton(
+					new Rectangle(0, y, PhoneUtils.APP_WIDTH,
+							PhoneUtils.textHeight(font, title, 0.5f, PhoneUtils.APP_WIDTH)),
+					null, phone, () -> subApp = this, title, font);
+		}
+
+		private void tickButton() {
+			button.tick();
+		}
+
+		private void renderButton() {
+			button.render();
+		}
+
+		@Override
+		public ResourceLocation getIcon() {
+			return null;
+		}
+
+		@Override
+		public ResourceLocation getBackground() {
+			return BACKGROUND;
+		}
+
+	}
+
+	private static class PostButton extends Button {
+
+		private static final ResourceLocation LINE = new ResourceLocation(Main.MODID,
+				"textures/gui/for_reddit_app/line.png");
+
+		private String title;
+		private FontRenderer font;
+
+		public PostButton(Rectangle rectangle, Supplier<ResourceLocation> icon, Phone phone, Runnable runnable,
+				String title, FontRenderer font) {
+			super(rectangle, icon, phone, runnable);
+			this.title = title;
+			this.font = font;
+		}
+
+		@Override
+		public void render() {
+			Color c = rectangle.contains(phone.getMouseX(), phone.getMouseY()) ? Color.BLUE : Color.BLACK;
+			PhoneUtils.writeOnPhoneWrap(font, title, 1, rectangle.y, c, 0.5f, PhoneUtils.APP_WIDTH, false);
+			PhoneUtils.drawOnPhone(LINE, 0, rectangle.y + rectangle.height + 5, PhoneUtils.APP_WIDTH, 2);
 		}
 	}
 

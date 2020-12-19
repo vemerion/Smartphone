@@ -12,7 +12,7 @@ public class Button {
 
 	protected Rectangle rectangle;
 	protected Supplier<ResourceLocation> icon;
-	private Phone phone;
+	protected Phone phone;
 	private Runnable runnable;
 	private boolean isLeftDownPrev;
 	private Color color = Color.WHITE;
