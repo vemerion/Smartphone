@@ -2,9 +2,11 @@ package mod.vemerion.smartphone.phone.app;
 
 import java.awt.Color;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +19,8 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -34,6 +38,13 @@ import net.minecraft.util.ResourceLocation;
 public class ForRedditApp extends App {
 
 	private static final Logger LOGGER = LogManager.getLogger();
+
+	private static final String TOKEN_URL = "https://www.reddit.com/api/v1/access_token";
+	private static final String APP_ID = "Bajzj3AxnbwURg:";
+	private static final String ATTRIBUTES = "grant_type=https://oauth.reddit.com/grants/installed_client&device_id=";
+	private static final String REDDIT = "https://oauth.reddit.com";
+	private static final String MINECRAFT_SUBREDDIT = REDDIT + "/r/minecraft/";
+	private static final String USER_AGENT = "minecraft:mod.vemerion.smartphone:v1.2.0 (by /u/vemerion)";
 
 	private static final ResourceLocation BACKGROUND = new ResourceLocation(Main.MODID,
 			"textures/gui/white_background.png");
@@ -59,7 +70,7 @@ public class ForRedditApp extends App {
 	public ForRedditApp(Phone phone) {
 		super(phone);
 		pages = new ArrayList<>();
-		
+
 		rightButton = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 + 10, PhoneUtils.APP_HEIGHT * 0.9f, 20),
 				() -> RIGHT_BUTTON, phone, () -> {
 					if (page < pages.size() - 1)
@@ -103,8 +114,8 @@ public class ForRedditApp extends App {
 			if (thread != null && !thread.isAlive()) {
 				token = thread.token;
 				timestamp = thread.timestamp;
-				if (thread.data != null) {
-					createPosts(thread.data);
+				if (thread.hasData()) {
+					createPosts(thread.getData());
 				}
 				thread = null;
 			}
@@ -147,7 +158,8 @@ public class ForRedditApp extends App {
 				i++;
 				y = 2;
 			}
-			pages.get(i).add(new Post(phone, JSONUtils.getString(o, "title"), y));
+			pages.get(i).add(new Post(phone, JSONUtils.getString(o, "title"), y, JSONUtils.getString(o, "selftext"),
+					JSONUtils.getString(o, "permalink")));
 			y += height;
 		}
 	}
@@ -176,14 +188,70 @@ public class ForRedditApp extends App {
 
 	private class Post extends App {
 		private Button button;
+		private String selftext;
+		private String permalink;
+		private List<String> comments;
+		private PostThread thread;
 
-		public Post(Phone phone, String title, int y) {
+		public Post(Phone phone, String title, int y, String selftext, String permalink) {
 			super(phone);
 			startup();
+			this.selftext = selftext;
+			this.permalink = permalink;
+			this.comments = new ArrayList<>();
 			button = new PostButton(
 					new Rectangle(0, y, PhoneUtils.APP_WIDTH,
 							PhoneUtils.textHeight(font, title, 0.5f, PhoneUtils.APP_WIDTH)),
-					null, phone, () -> subApp = this, title, font);
+					null, phone, () -> enterPost(), title, font);
+		}
+
+		private void enterPost() {
+			subApp = this;
+			thread = new PostThread(token, permalink);
+			thread.start();
+		}
+
+		@Override
+		public void tick() {
+			super.tick();
+
+			if (thread != null && !thread.isAlive()) {
+				if (thread.hasData()) {
+					createComments(thread.getData());
+				}
+				thread = null;
+			}
+		}
+
+		private void createComments(String data) {
+			JsonArray jsonArray = JSONUtils.fromJson(new GsonBuilder().create(), new StringReader(data),
+					JsonArray.class, false);
+			JsonObject json = JSONUtils.getJsonObject(JSONUtils.getJsonObject(jsonArray.get(1), "comments"), "data");
+			comments = new ArrayList<>();
+			for (JsonElement e : JSONUtils.getJsonArray(json, "children")) {
+				JsonObject o = JSONUtils.getJsonObject(JSONUtils.getJsonObject(e, "comment"), "data");
+				if (o.has("body")) {
+					String body = JSONUtils.getString(o, "body");
+					comments.add(body);
+				}
+			}
+		}
+
+		@Override
+		public void render() {
+			super.render();
+
+			PhoneUtils.writeOnPhoneWrap(font, selftext, 1, 1, Color.BLACK, 0.6f, PhoneUtils.APP_WIDTH - 2, false);
+
+			int y = PhoneUtils.textHeight(font, selftext, 0.6f, PhoneUtils.APP_WIDTH - 2) + 10;
+			for (String c : comments) {
+				int height = PhoneUtils.textHeight(font, c, 0.5f, PhoneUtils.APP_WIDTH - 2);
+				if (y + height > PhoneUtils.APP_HEIGHT)
+					break;
+				
+				PhoneUtils.writeOnPhoneWrap(font, c, 1, y, Color.BLACK, 0.5f, PhoneUtils.APP_WIDTH - 2, false);
+				y += height + 10;
+			}
 		}
 
 		private void tickButton() {
@@ -229,23 +297,13 @@ public class ForRedditApp extends App {
 		}
 	}
 
-	private static class ConnectionThread extends Thread {
+	private static abstract class RedditThread extends Thread {
 
-		private static final String TOKEN_URL = "https://www.reddit.com/api/v1/access_token";
-		private static final String APP_ID = "Bajzj3AxnbwURg:";
-		private static final String ATTRIBUTES = "grant_type=https://oauth.reddit.com/grants/installed_client&device_id=";
-		private static final String MINECRAFT_SUBREDDIT = "https://oauth.reddit.com/r/minecraft/";
-		private static final String USER_AGENT = "minecraft:mod.vemerion.smartphone:v1.2.0 (by /u/vemerion)";
-
-		private String token;
-		private UUID id;
-		private long timestamp;
+		protected String token;
 		private String data;
 
-		private ConnectionThread(String token, UUID id, long timestamp) {
+		protected RedditThread(String token) {
 			this.token = token;
-			this.id = id;
-			this.timestamp = timestamp;
 		}
 
 		@Override
@@ -257,7 +315,47 @@ public class ForRedditApp extends App {
 			}
 		}
 
-		private void connect() throws Exception {
+		protected abstract void connect() throws Exception;
+
+		protected String getResponse(HttpURLConnection conn) throws IOException {
+			BufferedReader inputReader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+			String inputLine;
+			StringBuffer response = new StringBuffer();
+
+			while ((inputLine = inputReader.readLine()) != null) {
+				response.append(inputLine);
+			}
+
+			inputReader.close();
+			return response.toString();
+		}
+
+		public void setData(String data) {
+			this.data = data;
+		}
+
+		public String getData() {
+			return data;
+		}
+
+		public boolean hasData() {
+			return data != null;
+		}
+	}
+
+	private static class ConnectionThread extends RedditThread {
+
+		private UUID id;
+		private long timestamp;
+
+		private ConnectionThread(String token, UUID id, long timestamp) {
+			super(token);
+			this.id = id;
+			this.timestamp = timestamp;
+		}
+
+		@Override
+		protected void connect() throws Exception {
 			if (token == null || System.currentTimeMillis() - timestamp > HOUR) {
 				System.out.println("REQUESTING TOKEN" + " " + token + " " + (System.currentTimeMillis() - timestamp));
 				HttpURLConnection connection = (HttpURLConnection) new URL(TOKEN_URL).openConnection();
@@ -279,16 +377,7 @@ public class ForRedditApp extends App {
 				System.out.println("Response Code : " + responseCode);
 
 				if (responseCode == HttpURLConnection.HTTP_OK) {
-					BufferedReader inputReader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-					String inputLine;
-					StringBuffer response = new StringBuffer();
-
-					while ((inputLine = inputReader.readLine()) != null) {
-						response.append(inputLine);
-					}
-
-					inputReader.close();
-					JsonObject json = new JsonParser().parse(response.toString()).getAsJsonObject();
+					JsonObject json = new JsonParser().parse(getResponse(connection)).getAsJsonObject();
 					token = JSONUtils.getString(json, "access_token");
 					timestamp = System.currentTimeMillis();
 					System.out.println("TOKEN: " + token);
@@ -305,17 +394,38 @@ public class ForRedditApp extends App {
 				System.out.println("Response Code : " + responseCode);
 
 				if (responseCode == HttpURLConnection.HTTP_OK) {
-					BufferedReader inputReader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-					String inputLine;
-					StringBuffer response = new StringBuffer();
+					String response = getResponse(connection);
+					System.out.println(response);
+					setData(response);
+				}
+			}
+		}
+	}
 
-					while ((inputLine = inputReader.readLine()) != null) {
-						response.append(inputLine);
-					}
+	private static class PostThread extends RedditThread {
 
-					inputReader.close();
+		private String permalink;
+
+		private PostThread(String token, String permalink) {
+			super(token);
+			this.permalink = permalink;
+		}
+
+		@Override
+		protected void connect() throws Exception {
+			if (token != null) {
+				HttpURLConnection connection = (HttpURLConnection) new URL(REDDIT + permalink).openConnection();
+				connection.setRequestProperty("Authorization", "Bearer " + token);
+				connection.setRequestProperty("User-Agent", USER_AGENT);
+				connection.setRequestMethod("GET");
+
+				int responseCode = connection.getResponseCode();
+				System.out.println("Response Code : " + responseCode);
+
+				if (responseCode == HttpURLConnection.HTTP_OK) {
+					String response = getResponse(connection);
 					System.out.println(response.toString());
-					data = response.toString();
+					setData(response);
 				}
 			}
 		}
