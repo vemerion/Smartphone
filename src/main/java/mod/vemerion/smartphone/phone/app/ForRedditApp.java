@@ -45,9 +45,11 @@ public class ForRedditApp extends App {
 	private static final String REDDIT = "https://oauth.reddit.com";
 	private static final String MINECRAFT_SUBREDDIT = REDDIT + "/r/minecraft/";
 	private static final String USER_AGENT = "minecraft:mod.vemerion.smartphone:v1.2.0 (by /u/vemerion)";
+	
+	private static final int TOP_OFFSET = (int) (PhoneUtils.APP_HEIGHT * 0.17);
 
 	private static final ResourceLocation BACKGROUND = new ResourceLocation(Main.MODID,
-			"textures/gui/white_background.png");
+			"textures/gui/for_reddit_app/background.png");
 	private static final ResourceLocation ICON = new ResourceLocation(Main.MODID,
 			"textures/gui/for_reddit_app/icon.png");
 	private static final ResourceLocation LEFT_BUTTON = new ResourceLocation(Main.MODID,
@@ -135,6 +137,10 @@ public class ForRedditApp extends App {
 		if (subApp != null) {
 			subApp.render();
 		} else {
+			
+			PhoneUtils.writeOnPhone(font, "For Reddit:", PhoneUtils.APP_WIDTH / 2, 2, Color.WHITE, 1, true);
+			PhoneUtils.writeOnPhone(font, "Minecraft", PhoneUtils.APP_WIDTH / 2, 14, Color.WHITE, 1, true);
+			
 			if (!pages.isEmpty())
 				for (Post p : pages.get(page))
 					p.renderButton();
@@ -148,15 +154,15 @@ public class ForRedditApp extends App {
 		pages = new ArrayList<>();
 		pages.add(new ArrayList<>());
 		int i = 0;
-		int y = 2;
+		int y = TOP_OFFSET;
 		for (JsonElement e : JSONUtils.getJsonArray(json, "children")) {
 			JsonObject o = JSONUtils.getJsonObject(JSONUtils.getJsonObject(e, "post"), "data");
 			String title = JSONUtils.getString(o, "title");
-			int height = PhoneUtils.textHeight(font, title, 0.5f, PhoneUtils.APP_WIDTH) + 10;
+			int height = PhoneUtils.textHeight(font, title, 0.5f, PhoneUtils.APP_WIDTH - 2) + 10;
 			if (y + height > PhoneUtils.APP_HEIGHT * 0.9) {
 				pages.add(new ArrayList<>());
 				i++;
-				y = 2;
+				y = TOP_OFFSET;
 			}
 			pages.get(i).add(new Post(phone, JSONUtils.getString(o, "title"), y, JSONUtils.getString(o, "selftext"),
 					JSONUtils.getString(o, "permalink")));
@@ -188,21 +194,28 @@ public class ForRedditApp extends App {
 
 	private class Post extends App {
 		private Button button;
+		private String title;
 		private String selftext;
 		private String permalink;
 		private List<String> comments;
 		private PostThread thread;
+		private Button backButton;
 
 		public Post(Phone phone, String title, int y, String selftext, String permalink) {
 			super(phone);
 			startup();
+			this.title = title;
 			this.selftext = selftext;
 			this.permalink = permalink;
 			this.comments = new ArrayList<>();
-			button = new PostButton(
+			this.button = new PostButton(
 					new Rectangle(0, y, PhoneUtils.APP_WIDTH,
-							PhoneUtils.textHeight(font, title, 0.5f, PhoneUtils.APP_WIDTH)),
+							PhoneUtils.textHeight(font, title, 0.5f, PhoneUtils.APP_WIDTH - 2)),
 					null, phone, () -> enterPost(), title, font);
+			this.backButton = new Button(new Rectangle(2, 2, 20),
+					() -> LEFT_BUTTON, phone, () -> {
+						subApp = null;
+					});
 		}
 
 		private void enterPost() {
@@ -214,6 +227,8 @@ public class ForRedditApp extends App {
 		@Override
 		public void tick() {
 			super.tick();
+			
+			backButton.tick();
 
 			if (thread != null && !thread.isAlive()) {
 				if (thread.hasData()) {
@@ -240,10 +255,18 @@ public class ForRedditApp extends App {
 		@Override
 		public void render() {
 			super.render();
+			
+			backButton.render();
+			
+			PhoneUtils.writeOnPhoneTrim(font, title, 25, 6, Color.BLACK, 1f, PhoneUtils.APP_WIDTH - 25, false, false);
+			
+			int y = TOP_OFFSET;
 
-			PhoneUtils.writeOnPhoneWrap(font, selftext, 1, 1, Color.BLACK, 0.6f, PhoneUtils.APP_WIDTH - 2, false);
+			if (!selftext.isEmpty()) {
+				PhoneUtils.writeOnPhoneWrap(font, selftext, 1, TOP_OFFSET, Color.BLACK, 0.6f, PhoneUtils.APP_WIDTH - 2, false);
+				y += PhoneUtils.textHeight(font, selftext, 0.6f, PhoneUtils.APP_WIDTH - 2) + 10;
+			}
 
-			int y = PhoneUtils.textHeight(font, selftext, 0.6f, PhoneUtils.APP_WIDTH - 2) + 10;
 			for (String c : comments) {
 				int height = PhoneUtils.textHeight(font, c, 0.5f, PhoneUtils.APP_WIDTH - 2);
 				if (y + height > PhoneUtils.APP_HEIGHT)
@@ -292,7 +315,7 @@ public class ForRedditApp extends App {
 		@Override
 		public void render() {
 			Color c = rectangle.contains(phone.getMouseX(), phone.getMouseY()) ? Color.BLUE : Color.BLACK;
-			PhoneUtils.writeOnPhoneWrap(font, title, 1, rectangle.y, c, 0.5f, PhoneUtils.APP_WIDTH, false);
+			PhoneUtils.writeOnPhoneWrap(font, title, 1, rectangle.y, c, 0.5f, PhoneUtils.APP_WIDTH - 2, false);
 			PhoneUtils.drawOnPhone(LINE, 0, rectangle.y + rectangle.height + 5, PhoneUtils.APP_WIDTH, 2);
 		}
 	}
