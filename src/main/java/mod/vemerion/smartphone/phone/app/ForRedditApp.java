@@ -45,7 +45,7 @@ public class ForRedditApp extends App {
 	private static final String REDDIT = "https://oauth.reddit.com";
 	private static final String MINECRAFT_SUBREDDIT = REDDIT + "/r/minecraft/";
 	private static final String USER_AGENT = "minecraft:mod.vemerion.smartphone:v1.2.0 (by /u/vemerion)";
-	
+
 	private static final int TOP_OFFSET = (int) (PhoneUtils.APP_HEIGHT * 0.17);
 
 	private static final ResourceLocation BACKGROUND = new ResourceLocation(Main.MODID,
@@ -56,6 +56,11 @@ public class ForRedditApp extends App {
 			"textures/gui/left_button.png");
 	private static final ResourceLocation RIGHT_BUTTON = new ResourceLocation(Main.MODID,
 			"textures/gui/right_button.png");
+	private static final ResourceLocation DOWN_BUTTON = new ResourceLocation(Main.MODID,
+			"textures/gui/down_button.png");
+	private static final ResourceLocation UP_BUTTON = new ResourceLocation(Main.MODID, "textures/gui/up_button.png");
+	private static final ResourceLocation LINE = new ResourceLocation(Main.MODID,
+			"textures/gui/for_reddit_app/line.png");
 
 	private static final long HOUR = 1000 * 60 * 60;
 
@@ -137,10 +142,10 @@ public class ForRedditApp extends App {
 		if (subApp != null) {
 			subApp.render();
 		} else {
-			
+
 			PhoneUtils.writeOnPhone(font, "For Reddit:", PhoneUtils.APP_WIDTH / 2, 2, Color.WHITE, 1, true);
 			PhoneUtils.writeOnPhone(font, "Minecraft", PhoneUtils.APP_WIDTH / 2, 14, Color.WHITE, 1, true);
-			
+
 			if (!pages.isEmpty())
 				for (Post p : pages.get(page))
 					p.renderButton();
@@ -200,6 +205,9 @@ public class ForRedditApp extends App {
 		private List<String> comments;
 		private PostThread thread;
 		private Button backButton;
+		private Button downButton;
+		private Button upButton;
+		private int down;
 
 		public Post(Phone phone, String title, int y, String selftext, String permalink) {
 			super(phone);
@@ -212,14 +220,24 @@ public class ForRedditApp extends App {
 					new Rectangle(0, y, PhoneUtils.APP_WIDTH,
 							PhoneUtils.textHeight(font, title, 0.5f, PhoneUtils.APP_WIDTH - 2)),
 					null, phone, () -> enterPost(), title, font);
-			this.backButton = new Button(new Rectangle(2, 2, 20),
-					() -> LEFT_BUTTON, phone, () -> {
-						subApp = null;
+			this.backButton = new Button(new Rectangle(2, 2, 20), () -> LEFT_BUTTON, phone, () -> {
+				subApp = null;
+			});
+
+			this.downButton = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 + 10, PhoneUtils.APP_HEIGHT * 0.9f, 20),
+					() -> DOWN_BUTTON, phone, () -> {
+						down++;
+					});
+			this.upButton = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 - 30, PhoneUtils.APP_HEIGHT * 0.9f, 20),
+					() -> UP_BUTTON, phone, () -> {
+						if (down > 0)
+							down--;
 					});
 		}
 
 		private void enterPost() {
 			subApp = this;
+			down = 0;
 			thread = new PostThread(token, permalink);
 			thread.start();
 		}
@@ -227,8 +245,10 @@ public class ForRedditApp extends App {
 		@Override
 		public void tick() {
 			super.tick();
-			
+
 			backButton.tick();
+			upButton.tick();
+			downButton.tick();
 
 			if (thread != null && !thread.isAlive()) {
 				if (thread.hasData()) {
@@ -255,25 +275,43 @@ public class ForRedditApp extends App {
 		@Override
 		public void render() {
 			super.render();
-			
+
 			backButton.render();
-			
+			upButton.render();
+			downButton.render();
+
 			PhoneUtils.writeOnPhoneTrim(font, title, 25, 6, Color.BLACK, 1f, PhoneUtils.APP_WIDTH - 25, false, false);
-			
-			int y = TOP_OFFSET;
+
+			int y = TOP_OFFSET - down * 50;
 
 			if (!selftext.isEmpty()) {
-				PhoneUtils.writeOnPhoneWrap(font, selftext, 1, TOP_OFFSET, Color.BLACK, 0.6f, PhoneUtils.APP_WIDTH - 2, false);
-				y += PhoneUtils.textHeight(font, selftext, 0.6f, PhoneUtils.APP_WIDTH - 2) + 10;
+				List<String> lines = font.listFormattedStringToWidth(selftext,
+						(int) (PhoneUtils.fromVirtualWidth(PhoneUtils.APP_WIDTH - 2) / 0.6f));
+				for (String line : lines) {
+					if (y >= TOP_OFFSET && y < PhoneUtils.APP_HEIGHT * 0.85)
+						PhoneUtils.writeOnPhone(font, line, 1, y, Color.BLACK, 0.6f, false);
+					y += PhoneUtils.textHeight(font, line, 0.6f, PhoneUtils.APP_WIDTH - 2) * 1.2f;
+				}
+				
+				if (y >= TOP_OFFSET &&y < PhoneUtils.APP_HEIGHT * 0.85)
+					PhoneUtils.drawOnPhone(LINE, 0, y + 5, PhoneUtils.APP_WIDTH, 2);
+				y += 10;
 			}
 
 			for (String c : comments) {
-				int height = PhoneUtils.textHeight(font, c, 0.5f, PhoneUtils.APP_WIDTH - 2);
-				if (y + height > PhoneUtils.APP_HEIGHT)
+				List<String> lines = font.listFormattedStringToWidth(c,
+						(int) (PhoneUtils.fromVirtualWidth(PhoneUtils.APP_WIDTH - 2) / 0.5f));
+				for (String line : lines) {
+					if (y >= TOP_OFFSET && y < PhoneUtils.APP_HEIGHT * 0.85)
+						PhoneUtils.writeOnPhone(font, line, 1, y, Color.BLACK, 0.5f, false);
+					y += PhoneUtils.textHeight(font, line, 0.5f, PhoneUtils.APP_WIDTH - 2) * 1.2f;
+				}
+				if (y > PhoneUtils.APP_HEIGHT * 0.85)
 					break;
 				
-				PhoneUtils.writeOnPhoneWrap(font, c, 1, y, Color.BLACK, 0.5f, PhoneUtils.APP_WIDTH - 2, false);
-				y += height + 10;
+				if (y >= TOP_OFFSET)
+				PhoneUtils.drawOnPhone(LINE, 0, y + 5, PhoneUtils.APP_WIDTH, 2);
+				y += 10;
 			}
 		}
 
@@ -298,9 +336,6 @@ public class ForRedditApp extends App {
 	}
 
 	private static class PostButton extends Button {
-
-		private static final ResourceLocation LINE = new ResourceLocation(Main.MODID,
-				"textures/gui/for_reddit_app/line.png");
 
 		private String title;
 		private FontRenderer font;
