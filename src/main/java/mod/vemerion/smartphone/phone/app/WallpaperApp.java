@@ -42,8 +42,8 @@ public class WallpaperApp extends App {
 		super(phone);
 		cameraButton = new Button(new Rectangle(0, 0, PhoneUtils.APP_HEIGHT / 2), () -> CAMERA, phone,
 				() -> subApp = new CameraApp(phone));
-		paintButton = new Button(new Rectangle(0, PhoneUtils.APP_HEIGHT / 2, PhoneUtils.APP_HEIGHT / 2), () -> PAINT, phone,
-				() -> subApp = new PaintApp(phone));
+		paintButton = new Button(new Rectangle(0, PhoneUtils.APP_HEIGHT / 2, PhoneUtils.APP_HEIGHT / 2), () -> PAINT,
+				phone, () -> subApp = new PaintApp(phone));
 
 		wallpaper = new int[PhoneUtils.WALLPAPER_WIDTH][PhoneUtils.WALLPAPER_HEIGHT];
 
@@ -165,7 +165,7 @@ public class WallpaperApp extends App {
 						phone.setWallpaper(wallpaper);
 						hasCustomWallpaper = true;
 					});
-			
+
 			startup();
 		}
 
@@ -228,12 +228,13 @@ public class WallpaperApp extends App {
 		private Button capture;
 		private int photoTakenTimer;
 		private String photoTakenMessage = "Wallpaper Updated!";
+		private int photoCountdown = -1;
 
 		public CameraApp(Phone phone) {
 			super(phone);
 			capture = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 - 16, PhoneUtils.APP_HEIGHT * 0.8f, 32),
-					() -> CAPTURE, phone, () -> takePhoto());
-			
+					() -> CAPTURE, phone, () -> photoCountdown = 3);
+
 			startup();
 		}
 
@@ -261,12 +262,11 @@ public class WallpaperApp extends App {
 					* bufferHeight);
 			int right = (int) ((windowWidth * 0.5f + PhoneUtils.SCREEN_HORIZONTAL_CENTER_OFFSET) / windowWidth
 					* window.getFramebufferWidth());
-			int bottom = (int) ((windowHeight - PhoneUtils.SCREEN_BOTTON_OFFSET) / windowHeight
-					* bufferHeight);
-			
+			int bottom = (int) ((windowHeight - PhoneUtils.SCREEN_BOTTON_OFFSET) / windowHeight * bufferHeight);
+
 			int pixelWidth = (int) ((right - left) / (float) PhoneUtils.WALLPAPER_WIDTH);
 			int pixelHeight = (int) ((bottom - top) / (float) PhoneUtils.WALLPAPER_HEIGHT);
-			
+
 			for (int x = 0; x < PhoneUtils.WALLPAPER_WIDTH; x++) {
 				for (int y = 0; y < PhoneUtils.WALLPAPER_HEIGHT; y++) {
 					int pixelX = MathHelper.clamp(left + x * pixelWidth, 0, photo.getWidth());
@@ -274,7 +274,7 @@ public class WallpaperApp extends App {
 					wallpaper[x][y] = fromNativeImageColor(photo.getPixelRGBA(pixelX, pixelY));
 				}
 			}
-			
+
 			phone.setWallpaper(wallpaper);
 			hasCustomWallpaper = true;
 		}
@@ -290,6 +290,11 @@ public class WallpaperApp extends App {
 		@Override
 		public void tick() {
 			super.tick();
+			
+			if (photoCountdown-- == 0) {
+				takePhoto();
+			}
+			
 			capture.tick();
 
 			photoTakenTimer--;
@@ -298,7 +303,8 @@ public class WallpaperApp extends App {
 		@Override
 		public void render() {
 			super.render();
-			capture.render();
+			if (photoCountdown < 0)
+				capture.render();
 
 			if (photoTakenTimer > 0) {
 				PhoneUtils.writeOnPhone(font, photoTakenMessage, 3, 3, Color.WHITE, 0.5f, false);
