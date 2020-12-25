@@ -1,6 +1,7 @@
 package mod.vemerion.smartphone.phone.app;
 
 import java.awt.Color;
+import java.util.function.Supplier;
 
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
@@ -29,8 +30,21 @@ public class WallpaperApp extends App {
 			"textures/gui/wallpaper_app/paint_brush.png");
 	private static final ResourceLocation CAPTURE = new ResourceLocation(Main.MODID,
 			"textures/gui/wallpaper_app/capture_button.png");
-	private static final ResourceLocation CONFIRM = new ResourceLocation(Main.MODID,
-			"textures/gui/wallpaper_app/confirm_button.png");
+
+	private static final ResourceLocation ERASER = new ResourceLocation(Main.MODID,
+			"textures/gui/wallpaper_app/eraser_button.png");
+	private static final ResourceLocation PIPETTE = new ResourceLocation(Main.MODID,
+			"textures/gui/wallpaper_app/pipette_button.png");
+	private static final ResourceLocation BRUSH = new ResourceLocation(Main.MODID,
+			"textures/gui/wallpaper_app/brush_button.png");
+	private static final ResourceLocation COLOR_INDICATOR = new ResourceLocation(Main.MODID,
+			"textures/gui/wallpaper_app/color_indicator.png");
+	private static final ResourceLocation COLOR_INDICATOR_OVERLAY = new ResourceLocation(Main.MODID,
+			"textures/gui/wallpaper_app/color_indicator_overlay.png");
+
+	private enum Mode {
+		BRUSH, ERASER, PIPETTE
+	};
 
 	private Button cameraButton;
 	private Button paintButton;
@@ -138,33 +152,34 @@ public class WallpaperApp extends App {
 				"textures/gui/wallpaper_app/paint_background.png");
 
 		private final float CANVAS_SIZE = 0.8f;
-		private final Color[] colors = new Color[] { Color.BLACK, Color.WHITE, Color.BLUE, Color.CYAN, Color.DARK_GRAY,
-				Color.GRAY, Color.GREEN, Color.MAGENTA, Color.ORANGE, Color.PINK, Color.RED, Color.YELLOW };
 
 		private Color brushColor = Color.BLACK;
-		private Button[] colorButtons;
-		private Button confirmButton;
+		private Button brushButton;
+		private Button eraserButton;
+		private Button pipetteButton;
 		private int confirmMessageTimer;
+		private Mode currentMode;
 
 		public PaintApp(Phone phone) {
 			super(phone);
 
-			colorButtons = new Button[colors.length];
+			currentMode = Mode.BRUSH;
 
-			int borderSize = 4;
-			float buttonX = PhoneUtils.APP_WIDTH * CANVAS_SIZE + borderSize;
-			for (int i = 0; i < colors.length; i++) {
-				Color buttonColor = colors[i];
-				colorButtons[i] = new Button(new Rectangle(buttonX, i * 16, 16), () -> PhoneUtils.WHITE_PIXEL, phone,
-						() -> brushColor = buttonColor, colors[i]);
-			}
+			brushButton = new CanvasButton(new Rectangle(PhoneUtils.APP_WIDTH * CANVAS_SIZE + 4, 0, 16), () -> BRUSH,
+					phone, () -> {
+						currentMode = Mode.BRUSH;
+					}, Mode.BRUSH);
 
-			confirmButton = new Button(new Rectangle(PhoneUtils.APP_WIDTH / 2 - 16, PhoneUtils.APP_HEIGHT * 0.84f, 32),
-					() -> CONFIRM, phone, () -> {
-						confirmMessageTimer = 40;
-						phone.setWallpaper(wallpaper);
-						hasCustomWallpaper = true;
-					});
+			eraserButton = new CanvasButton(new Rectangle(PhoneUtils.APP_WIDTH * CANVAS_SIZE + 4, 16, 16), () -> ERASER,
+					phone, () -> {
+						currentMode = Mode.ERASER;
+					}, Mode.ERASER);
+
+			pipetteButton = new CanvasButton(new Rectangle(PhoneUtils.APP_WIDTH * CANVAS_SIZE + 4, 32, 16),
+					() -> PIPETTE, phone, () -> {
+						currentMode = Mode.PIPETTE;
+					}, Mode.PIPETTE);
+			
 
 			startup();
 		}
@@ -173,24 +188,28 @@ public class WallpaperApp extends App {
 		public void tick() {
 			super.tick();
 
+			brushButton.tick();
+			eraserButton.tick();
+			pipetteButton.tick();
+			
 			if (phone.isLeftDown())
-				paintPixel(phone.getMouseX(), phone.getMouseY());
-
-			for (Button b : colorButtons)
-				b.tick();
-
-			confirmButton.tick();
+				canvasAction(phone.getMouseX(), phone.getMouseY());
 
 			confirmMessageTimer--;
 		}
 
-		private void paintPixel(float mouseX, float mouseY) {
+		private void canvasAction(float mouseX, float mouseY) {
 			int x = (int) MathHelper.lerp(mouseX / (CANVAS_SIZE * PhoneUtils.APP_WIDTH), 0, PhoneUtils.WALLPAPER_WIDTH);
 			int y = (int) MathHelper.lerp(mouseY / (CANVAS_SIZE * PhoneUtils.APP_HEIGHT), 0,
 					PhoneUtils.WALLPAPER_HEIGHT);
 
 			if (x < PhoneUtils.WALLPAPER_WIDTH && y < PhoneUtils.WALLPAPER_HEIGHT && x >= 0 && y >= 0) {
-				wallpaper[x][y] = brushColor.getRGB();
+				if (currentMode == Mode.BRUSH)
+					wallpaper[x][y] = brushColor.getRGB();
+				else if (currentMode == Mode.ERASER)
+					wallpaper[x][y] = Color.WHITE.getRGB();
+				else if (currentMode == Mode.PIPETTE)
+					brushColor = new Color(wallpaper[x][y], true);
 			}
 		}
 
@@ -198,13 +217,15 @@ public class WallpaperApp extends App {
 		public void render() {
 			super.render();
 
+			brushButton.render();
+			eraserButton.render();
+			pipetteButton.render();
+			
 			PhoneUtils.drawWallpaper(wallpaper, 0, 0, CANVAS_SIZE * PhoneUtils.APP_WIDTH,
 					CANVAS_SIZE * PhoneUtils.APP_HEIGHT);
 
-			for (Button b : colorButtons)
-				b.render();
-
-			confirmButton.render();
+			PhoneUtils.drawOnPhone(COLOR_INDICATOR, 1, PhoneUtils.APP_HEIGHT * 0.83f, 32, 32);
+			PhoneUtils.drawOnPhone(COLOR_INDICATOR_OVERLAY, 1, PhoneUtils.APP_HEIGHT * 0.83f, 32, 32, brushColor);
 
 			if (confirmMessageTimer > 0) {
 				PhoneUtils.writeOnPhone(font, "Wallpaper updated!", 3, 3, Color.BLACK, 0.5f, false);
@@ -221,6 +242,24 @@ public class WallpaperApp extends App {
 			return PAINT_BACKGROUND;
 		}
 
+		private class CanvasButton extends Button {
+			private Mode mode;
+
+			public CanvasButton(Rectangle rectangle, Supplier<ResourceLocation> icon, Phone phone, Runnable r,
+					Mode mode) {
+				super(rectangle, icon, phone, r);
+				this.mode = mode;
+			}
+
+			@Override
+			protected Color getColor() {
+				if (currentMode == mode)
+					return HOVER_COLOR;
+				else
+					return super.getColor();
+			}
+
+		}
 	}
 
 	private class CameraApp extends App {
@@ -290,11 +329,11 @@ public class WallpaperApp extends App {
 		@Override
 		public void tick() {
 			super.tick();
-			
+
 			if (photoCountdown-- == 0) {
 				takePhoto();
 			}
-			
+
 			capture.tick();
 
 			photoTakenTimer--;

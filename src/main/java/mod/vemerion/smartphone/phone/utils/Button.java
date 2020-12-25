@@ -8,7 +8,7 @@ import mod.vemerion.smartphone.phone.Phone;
 import net.minecraft.util.ResourceLocation;
 
 public class Button {
-	private static final Color HOVER_COLOR = new Color(100, 100, 100);
+	protected static final Color HOVER_COLOR = new Color(100, 100, 100);
 
 	protected Rectangle rectangle;
 	protected Supplier<ResourceLocation> icon;
@@ -42,9 +42,13 @@ public class Button {
 		}
 		isLeftDownPrev = isLeftDown;
 	}
+	
+	protected Color getColor() {
+		return color;
+	}
 
 	public void render() {
-		Color c = rectangle.contains(phone.getMouseX(), phone.getMouseY()) ? HOVER_COLOR : color;
+		Color c = rectangle.contains(phone.getMouseX(), phone.getMouseY()) ? HOVER_COLOR : getColor();
 		PhoneUtils.drawOnPhone(icon.get(), rectangle.x, rectangle.y, rectangle.width, rectangle.height, texBounds.x,
 				texBounds.y, texBounds.width, texBounds.height, c);
 	}
