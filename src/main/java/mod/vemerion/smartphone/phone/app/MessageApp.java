@@ -44,6 +44,11 @@ public class MessageApp extends App implements ICommunicator {
 			"textures/gui/message_app/alert.png");
 	private static final ResourceLocation ADD_CONTACT_TEXT_FIELD = new ResourceLocation(Main.MODID,
 			"textures/gui/message_app/add_contact_text_field.png");
+	private static final ResourceLocation MESSAGE_BUBBLE = new ResourceLocation(Main.MODID,
+			"textures/gui/message_app/message_bubble.png");
+	
+	private static final Color YOU_COLOR = new Color(85, 255, 255);
+	private static final Color OTHER_COLOR = new Color(150, 255, 120);
 
 	private static final int ADD_CONTACT_BUTTON_X = 2;
 	private static final int ADD_CONTACT_BUTTON_SIZE = 30;
@@ -161,8 +166,8 @@ public class MessageApp extends App implements ICommunicator {
 
 			addContactButton.render();
 			int textX = ADD_CONTACT_BUTTON_X + ADD_CONTACT_BUTTON_SIZE + 1;
-			PhoneUtils.drawOnPhone(ADD_CONTACT_TEXT_FIELD, textX - 2, PhoneUtils.APP_HEIGHT - 20 - 2, ADD_CONTACT_TEXT_WIDTH + 2,
-					font.FONT_HEIGHT, 0, 0, 1, 1);
+			PhoneUtils.drawOnPhone(ADD_CONTACT_TEXT_FIELD, textX - 2, PhoneUtils.APP_HEIGHT - 20 - 2,
+					ADD_CONTACT_TEXT_WIDTH + 2, font.FONT_HEIGHT, 0, 0, 1, 1);
 
 			PhoneUtils.writeOnPhoneTrim(font, addContactText, textX, PhoneUtils.APP_HEIGHT - 20, Color.BLACK, 0.5f,
 					ADD_CONTACT_TEXT_WIDTH, true, false);
@@ -259,7 +264,7 @@ public class MessageApp extends App implements ICommunicator {
 					+ CONTACT_BUTTON_BORDER;
 			deserializeNBT(compound);
 			startup();
-			
+
 			this.backButton = new Button(new Rectangle(2, 2, 20), () -> LEFT_BUTTON, phone, () -> {
 				subApp = null;
 			});
@@ -277,7 +282,7 @@ public class MessageApp extends App implements ICommunicator {
 						subApp = this;
 						hasUnreadMessages = false;
 					});
-			
+
 			this.backButton = new Button(new Rectangle(2, 2, 20), () -> LEFT_BUTTON, phone, () -> {
 				subApp = null;
 			});
@@ -336,18 +341,19 @@ public class MessageApp extends App implements ICommunicator {
 				String m = messages.get(i);
 				boolean fromYou = m.startsWith("you:");
 				m = fromYou ? m.substring(4) : m;
-				float x = fromYou ? PhoneUtils.APP_WIDTH / 2 + 2 : 2;
-				y -= 6 + PhoneUtils.textHeight(font, m, 0.5f, MESSAGE_WIDTH);
+				float x = fromYou ? PhoneUtils.APP_WIDTH / 2 + 1 : 4;
+				int height = PhoneUtils.textHeight(font, m, 0.5f, MESSAGE_WIDTH);
+				y -= 6 + height;
 
-				if (y < 31)
+				if (y < 33)
 					break;
 
-				PhoneUtils.writeOnPhoneWrap(font, m, x, y, fromYou ? Color.BLUE : Color.GREEN, 0.5f, MESSAGE_WIDTH,
-						false);
+				PhoneUtils.drawOnPhone(MESSAGE_BUBBLE, x - 2, y - 2, MESSAGE_WIDTH + 4, height + 4,
+						fromYou ? YOU_COLOR : OTHER_COLOR);
+				PhoneUtils.writeOnPhoneWrap(font, m, x, y, Color.BLACK, 0.5f, MESSAGE_WIDTH, false);
 			}
 
-			PhoneUtils.writeOnPhoneTrim(font, name, 25, 6, Color.BLACK, 1, PhoneUtils.APP_WIDTH - 25,
-					false, false);
+			PhoneUtils.writeOnPhoneTrim(font, name, 25, 6, Color.BLACK, 1, PhoneUtils.APP_WIDTH - 25, false, false);
 
 			PhoneUtils.writeOnPhoneWrap(font, message, 1, MESSAGE_LINE + 8, Color.BLACK, 0.8f, PhoneUtils.APP_WIDTH - 2,
 					false);
