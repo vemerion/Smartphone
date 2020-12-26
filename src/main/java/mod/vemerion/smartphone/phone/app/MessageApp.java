@@ -248,6 +248,7 @@ public class MessageApp extends App implements ICommunicator {
 		private String name;
 		private List<String> messages;
 		private ContactButton button;
+		private Button backButton;
 		private float y;
 		private String message = "";
 		private boolean hasUnreadMessages = true;
@@ -258,6 +259,10 @@ public class MessageApp extends App implements ICommunicator {
 					+ CONTACT_BUTTON_BORDER;
 			deserializeNBT(compound);
 			startup();
+			
+			this.backButton = new Button(new Rectangle(2, 2, 20), () -> LEFT_BUTTON, phone, () -> {
+				subApp = null;
+			});
 		}
 
 		public ContactInfo(Phone phone, UUID uuid, String name, List<String> messages) {
@@ -272,6 +277,10 @@ public class MessageApp extends App implements ICommunicator {
 						subApp = this;
 						hasUnreadMessages = false;
 					});
+			
+			this.backButton = new Button(new Rectangle(2, 2, 20), () -> LEFT_BUTTON, phone, () -> {
+				subApp = null;
+			});
 			startup();
 		}
 
@@ -298,6 +307,7 @@ public class MessageApp extends App implements ICommunicator {
 		@Override
 		public void tick() {
 			super.tick();
+			backButton.tick();
 
 			for (char c : phone.getCharsTyped()) {
 				if (message.length() < 55 && SharedConstants.isAllowedCharacter(c)) {
@@ -319,6 +329,7 @@ public class MessageApp extends App implements ICommunicator {
 		@Override
 		public void render() {
 			super.render();
+			backButton.render();
 
 			float y = MESSAGE_LINE - 2;
 			for (int i = messages.size() - 1; i >= 0; i--) {
@@ -328,15 +339,15 @@ public class MessageApp extends App implements ICommunicator {
 				float x = fromYou ? PhoneUtils.APP_WIDTH / 2 + 2 : 2;
 				y -= 6 + PhoneUtils.textHeight(font, m, 0.5f, MESSAGE_WIDTH);
 
-				if (y < 20)
+				if (y < 31)
 					break;
 
 				PhoneUtils.writeOnPhoneWrap(font, m, x, y, fromYou ? Color.BLUE : Color.GREEN, 0.5f, MESSAGE_WIDTH,
 						false);
 			}
 
-			PhoneUtils.writeOnPhoneTrim(font, name, PhoneUtils.APP_WIDTH / 2, 2, Color.BLACK, 1, PhoneUtils.APP_WIDTH,
-					false, true);
+			PhoneUtils.writeOnPhoneTrim(font, name, 25, 6, Color.BLACK, 1, PhoneUtils.APP_WIDTH - 25,
+					false, false);
 
 			PhoneUtils.writeOnPhoneWrap(font, message, 1, MESSAGE_LINE + 8, Color.BLACK, 0.8f, PhoneUtils.APP_WIDTH - 2,
 					false);
