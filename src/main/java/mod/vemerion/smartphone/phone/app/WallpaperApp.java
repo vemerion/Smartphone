@@ -1,6 +1,8 @@
 package mod.vemerion.smartphone.phone.app;
 
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 import mod.vemerion.smartphone.Main;
@@ -157,13 +159,33 @@ public class WallpaperApp extends App {
 		private Button brushButton;
 		private Button eraserButton;
 		private Button pipetteButton;
-		private int confirmMessageTimer;
 		private Mode currentMode;
+		private List<Button> colorButtons;
 
 		public PaintApp(Phone phone) {
 			super(phone);
 
 			currentMode = Mode.BRUSH;
+
+			colorButtons = new ArrayList<>();
+
+			float startX = 2.5f;
+			float startY = PhoneUtils.APP_HEIGHT * 0.825f;
+			float buttonWidth = 4;
+			int rowCount = (int) ((PhoneUtils.APP_WIDTH - startX * 2) / (buttonWidth + 1));
+			int i = 0;
+			for (int r = 0; r < 5; r++) {
+				for (int g = 0; g < 5; g++) {
+					for (int b = 0; b < 5; b++) {
+						Color color = new Color(r * 63, g * 63, b * 63);
+						colorButtons.add(new Button(
+								new Rectangle(startX + (buttonWidth + 1) * (i % rowCount),
+										startY + (buttonWidth + 1) * (i / rowCount), buttonWidth),
+								() -> PhoneUtils.WHITE_PIXEL, phone, () -> brushColor = color, color));
+						i++;
+					}
+				}
+			}
 
 			brushButton = new CanvasButton(new Rectangle(PhoneUtils.APP_WIDTH * CANVAS_SIZE + 4, 0, 16), () -> BRUSH,
 					phone, () -> {
@@ -179,7 +201,6 @@ public class WallpaperApp extends App {
 					() -> PIPETTE, phone, () -> {
 						currentMode = Mode.PIPETTE;
 					}, Mode.PIPETTE);
-			
 
 			startup();
 		}
@@ -191,11 +212,12 @@ public class WallpaperApp extends App {
 			brushButton.tick();
 			eraserButton.tick();
 			pipetteButton.tick();
-			
+
+			for (Button b : colorButtons)
+				b.tick();
+
 			if (phone.isLeftDown())
 				canvasAction(phone.getMouseX(), phone.getMouseY());
-
-			confirmMessageTimer--;
 		}
 
 		private void canvasAction(float mouseX, float mouseY) {
@@ -220,16 +242,15 @@ public class WallpaperApp extends App {
 			brushButton.render();
 			eraserButton.render();
 			pipetteButton.render();
-			
+
+			for (Button b : colorButtons)
+				b.render();
+
 			PhoneUtils.drawWallpaper(wallpaper, 0, 0, CANVAS_SIZE * PhoneUtils.APP_WIDTH,
 					CANVAS_SIZE * PhoneUtils.APP_HEIGHT);
 
-			PhoneUtils.drawOnPhone(COLOR_INDICATOR, 1, PhoneUtils.APP_HEIGHT * 0.83f, 32, 32);
-			PhoneUtils.drawOnPhone(COLOR_INDICATOR_OVERLAY, 1, PhoneUtils.APP_HEIGHT * 0.83f, 32, 32, brushColor);
-
-			if (confirmMessageTimer > 0) {
-				PhoneUtils.writeOnPhone(font, "Wallpaper updated!", 3, 3, Color.BLACK, 0.5f, false);
-			}
+			PhoneUtils.drawOnPhone(COLOR_INDICATOR, CANVAS_SIZE * PhoneUtils.APP_WIDTH + 4, PhoneUtils.APP_HEIGHT * 0.74f, 16, 16);
+			PhoneUtils.drawOnPhone(COLOR_INDICATOR_OVERLAY, CANVAS_SIZE * PhoneUtils.APP_WIDTH + 4, PhoneUtils.APP_HEIGHT * 0.74f, 16, 16, brushColor);
 		}
 
 		@Override
