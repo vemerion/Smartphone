@@ -13,6 +13,7 @@ import mod.vemerion.smartphone.network.Network;
 import mod.vemerion.smartphone.network.SavePhoneStateMessage;
 import mod.vemerion.smartphone.phone.app.App;
 import mod.vemerion.smartphone.phone.app.CatchAppleApp;
+import mod.vemerion.smartphone.phone.app.ForRedditApp;
 import mod.vemerion.smartphone.phone.app.JukeboxApp;
 import mod.vemerion.smartphone.phone.app.MapApp;
 import mod.vemerion.smartphone.phone.app.MessageApp;
@@ -83,6 +84,7 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 		apps.add(new WallpaperApp(this));
 		apps.add(new MapApp(this));
 		apps.add(new MessageApp(this));
+		apps.add(new ForRedditApp(this));
 		
 		// App button
 		appButtons = new ArrayList<>();

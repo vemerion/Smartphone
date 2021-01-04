@@ -116,7 +116,7 @@ public class PhoneUtils {
 		}
 	}
 
-	private static void writeOnPhone(MatrixStack matrix, FontRenderer font, IReorderingProcessor text, float x, float y,
+	public static void writeOnPhone(MatrixStack matrix, FontRenderer font, IReorderingProcessor text, float x, float y,
 			Color color, float size, boolean center) {
 		MainWindow window = Minecraft.getInstance().getMainWindow();
 		float windowWidth = window.getScaledWidth();
@@ -154,10 +154,14 @@ public class PhoneUtils {
 		List<IReorderingProcessor> lines = font.trimStringToWidth(new StringTextComponent(text),
 				(int) fromVirtualWidth(width / size));
 		for (int i = 0; i < lines.size(); i++) {
-			writeOnPhone(matrix, font, lines.get(i), x, y + font.FONT_HEIGHT * i * size, color, size, center);
+			writeOnPhone(matrix, font, lines.get(i), x, y + font.FONT_HEIGHT * i * size * 1.3f, color, size, center);
 		}
 	}
-
+	
+	public static int textHeight(FontRenderer font, String text, float size, float width) {
+		return (int) (font.getWordWrappedHeight(text, (int) (PhoneUtils.fromVirtualWidth(width) / size)) * size * 1.3f);
+	}
+	
 	// converts virtual app width to window width
 	public static float fromVirtualWidth(float width) {
 		return width / APP_WIDTH * SCREEN_WIDTH;
@@ -166,5 +170,9 @@ public class PhoneUtils {
 	// converts window width to virtual app width
 	public static float toVirtualWidth(float width) {
 		return width * APP_WIDTH / SCREEN_WIDTH;
+	}
+	
+	public static float toVirtualHeight(float height) {
+		return height * APP_HEIGHT / SCREEN_HEIGHT;
 	}
 }
