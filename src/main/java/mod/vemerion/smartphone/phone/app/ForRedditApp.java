@@ -415,7 +415,6 @@ public class ForRedditApp extends App {
 		@Override
 		protected void connect() throws Exception {
 			if (token == null || System.currentTimeMillis() - timestamp > HOUR) {
-				System.out.println("REQUESTING TOKEN" + " " + token + " " + (System.currentTimeMillis() - timestamp));
 				HttpURLConnection connection = (HttpURLConnection) new URL(TOKEN_URL).openConnection();
 				connection.setRequestMethod("POST");
 				byte[] encodedAuth = Base64.getEncoder().encode(APP_ID.getBytes(StandardCharsets.UTF_8));
@@ -432,13 +431,11 @@ public class ForRedditApp extends App {
 				os.close();
 
 				Integer responseCode = connection.getResponseCode();
-				System.out.println("Response Code : " + responseCode);
 
 				if (responseCode == HttpURLConnection.HTTP_OK) {
 					JsonObject json = new JsonParser().parse(getResponse(connection)).getAsJsonObject();
 					token = JSONUtils.getString(json, "access_token");
 					timestamp = System.currentTimeMillis();
-					System.out.println("TOKEN: " + token);
 				}
 			}
 
@@ -449,11 +446,9 @@ public class ForRedditApp extends App {
 				connection.setRequestMethod("GET");
 
 				int responseCode = connection.getResponseCode();
-				System.out.println("Response Code : " + responseCode);
 
 				if (responseCode == HttpURLConnection.HTTP_OK) {
 					String response = getResponse(connection);
-					System.out.println(response);
 					setData(response);
 				}
 			}
@@ -478,11 +473,9 @@ public class ForRedditApp extends App {
 				connection.setRequestMethod("GET");
 
 				int responseCode = connection.getResponseCode();
-				System.out.println("Response Code : " + responseCode);
 
 				if (responseCode == HttpURLConnection.HTTP_OK) {
 					String response = getResponse(connection);
-					System.out.println(response.toString());
 					setData(response);
 				}
 			}
