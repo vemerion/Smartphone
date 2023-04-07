@@ -1,6 +1,6 @@
 package mod.vemerion.smartphone.phone.app;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
@@ -9,10 +9,10 @@ import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.gen.Heightmap;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.material.MaterialColor.Brightness;
 
 public class MapApp extends App {
 	private static final ResourceLocation ICON = new ResourceLocation("textures/item/compass_00.png");
@@ -63,9 +63,8 @@ public class MapApp extends App {
 		mapTexture = new DynamicTexture(mapWidth(), mapHeight(), true);
 		fillMapTexture();
 
-		map = Minecraft.getInstance().getTextureManager().getDynamicTextureLocation(Main.MODID + "map_app_texture",
+		map = Minecraft.getInstance().getTextureManager().register(Main.MODID + "map_app_texture",
 				mapTexture);
-		mapTexture.updateDynamicTexture();
 	}
 
 	@Override
@@ -75,16 +74,17 @@ public class MapApp extends App {
 	}
 
 	private void fillMapTexture() {
-		BlockPos center = Minecraft.getInstance().player.getPosition();
-		BlockPos topLeft = center.add(-mapWidth() / 2, 0, -mapHeight() / 2);
+		var mc = Minecraft.getInstance();
+		var center = mc.player.blockPosition();
+		var topLeft = center.offset(-mapWidth() / 2, 0, -mapHeight() / 2);
 		
 		// Go through nearby chunks
 		for (int i = -16; i < mapWidth() + 16; i += 16) {
 			for (int j = -16; j < mapHeight() + 16; j += 16) {
 				int chunkX = topLeft.getX() + i;
 				int chunkZ = topLeft.getZ() + j;
-				BlockPos pos = new BlockPos(chunkX, center.getY(), chunkZ);
-				Chunk chunk = Minecraft.getInstance().world.getChunkAt(pos);
+				var pos = new BlockPos(chunkX, center.getY(), chunkZ);
+				var chunk = mc.level.getChunkAt(pos);
 				if (!chunk.isEmpty()) {
 					
 					// Go through blocks in chunk
@@ -96,16 +96,17 @@ public class MapApp extends App {
 							int mapY = y - topLeft.getZ();
 
 							if (mapX >= 0 && mapX < mapWidth() && mapY >= 0 && mapY < mapHeight()) {
-								int height = chunk.getTopBlockY(Heightmap.Type.WORLD_SURFACE, k, l);
+								int height = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, k, l);
 								BlockPos blockPos = new BlockPos(x, height, y);
-								int color = chunk.getBlockState(blockPos).getMaterial().getColor().getMapColor(1);
-								mapTexture.getTextureData().setPixelRGBA(mapX, mapY, color);
+								int color = chunk.getBlockState(blockPos).getMaterial().getColor().calculateRGBColor(Brightness.NORMAL);
+								mapTexture.getPixels().setPixelRGBA(mapX, mapY, color);
 							}
 						}
 					}
 				}
 			}
 		}
+		mapTexture.upload();
 	}
 	
 	private int mapWidth() {
@@ -124,7 +125,7 @@ public class MapApp extends App {
 	}
 
 	@Override
-	public void render(MatrixStack matrix) {
+	public void render(PoseStack matrix) {
 		super.render(matrix);
 
 		if (map != null)

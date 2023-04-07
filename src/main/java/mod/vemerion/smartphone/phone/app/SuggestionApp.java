@@ -2,12 +2,13 @@ package mod.vemerion.smartphone.phone.app;
 
 import java.awt.Color;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import mod.vemerion.smartphone.Main;
+import mod.vemerion.smartphone.ModInit;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class SuggestionApp extends App {
 	
@@ -29,11 +30,11 @@ public class SuggestionApp extends App {
 		super.tick();
 		
 		if (ticksExisted % 3 == 0 && ticksExisted < (text.length() - 9) * 2)
-			phone.playSound(Main.WRITE_SOUND, 0.3f);
+			phone.playSound(ModInit.WRITE.get(), 0.3f);
 	}
 	
 	@Override
-	public void render(MatrixStack matrix) {
+	public void render(PoseStack matrix) {
 		super.render(matrix);
 		int totalLetters = ticksExisted / 2;
 		for (int i = 0; i < words.length; i++) {

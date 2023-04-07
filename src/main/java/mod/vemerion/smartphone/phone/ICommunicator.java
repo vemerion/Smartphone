@@ -5,7 +5,7 @@ import java.util.UUID;
 import mod.vemerion.smartphone.network.Network;
 import mod.vemerion.smartphone.network.communication.AddContactMessage;
 import mod.vemerion.smartphone.network.communication.SendTextMessage;
-import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraftforge.network.PacketDistributor;
 
 public interface ICommunicator {
 	default void sendAddContactMessage(String name) {

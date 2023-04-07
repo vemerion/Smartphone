@@ -8,78 +8,77 @@ import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.network.LoadPhoneStateMessage;
 import mod.vemerion.smartphone.network.Network;
 import mod.vemerion.smartphone.phone.Phone;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.util.Direction;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.Capability.IStorage;
-import net.minecraftforge.common.capabilities.CapabilityInject;
+import net.minecraftforge.common.capabilities.CapabilityManager;
+import net.minecraftforge.common.capabilities.CapabilityToken;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
-import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraftforge.network.PacketDistributor;
 
-public class PhoneState implements INBTSerializable<CompoundNBT> {
-	@CapabilityInject(PhoneState.class)
-	public static final Capability<PhoneState> CAPABILITY = null;
+public class PhoneState implements INBTSerializable<CompoundTag> {
+	public static final Capability<PhoneState> CAPABILITY = CapabilityManager.get(new CapabilityToken<PhoneState>() {
+	});
 
-	private CompoundNBT state;
+	private CompoundTag state;
 	private List<TextMessage> pendingMessages;
 
 	public PhoneState() {
-		state = new CompoundNBT();
+		state = new CompoundTag();
 		pendingMessages = new ArrayList<>();
 	}
 
 	@Override
-	public CompoundNBT serializeNBT() {
-		CompoundNBT compound = new CompoundNBT();
+	public CompoundTag serializeNBT() {
+		var compound = new CompoundTag();
 		compound.put("state", state);
 		compound.put("messages", TextMessage.serializeTextMessages(pendingMessages));
 		return compound;
 	}
 
 	@Override
-	public void deserializeNBT(CompoundNBT nbt) {
+	public void deserializeNBT(CompoundTag nbt) {
 		state = nbt.getCompound("state");
-		ListNBT msgs = nbt.getList("messages", Constants.NBT.TAG_COMPOUND);
+		var msgs = nbt.getList("messages", Tag.TAG_COMPOUND);
 		pendingMessages = TextMessage.deserializeTextMessages(msgs);
 	}
 
 	public void storeTextMessage(UUID uniqueID, UUID messageId, String senderName, String text) {
 		pendingMessages.add(new TextMessage(uniqueID, messageId, senderName, text));
 	}
-	
-	public void sendLoadStateMessage(ServerPlayerEntity destination) {
+
+	public void sendLoadStateMessage(ServerPlayer destination) {
 		Network.INSTANCE.send(PacketDistributor.PLAYER.with(() -> destination),
 				new LoadPhoneStateMessage(state, TextMessage.serializeTextMessages(pendingMessages)));
 		pendingMessages = new ArrayList<>();
 	}
-	
+
 	public void removePendingTextMessage(UUID messageId) {
 		for (int i = pendingMessages.size() - 1; i >= 0; i--) {
 			if (pendingMessages.get(i).messageId.equals(messageId))
 				pendingMessages.remove(i);
 		}
 	}
-	
-	public void setState(CompoundNBT s) {
+
+	public void setState(CompoundTag s) {
 		this.state = s;
 	}
 
 	@EventBusSubscriber(modid = Main.MODID, bus = EventBusSubscriber.Bus.FORGE)
-	public static class PhoneStorageProvider implements ICapabilitySerializable<INBT> {
+	public static class PhoneStorageProvider implements ICapabilitySerializable<CompoundTag> {
 
-		private LazyOptional<PhoneState> instance = LazyOptional.of(CAPABILITY::getDefaultInstance);
+		private LazyOptional<PhoneState> instance = LazyOptional.of(PhoneState::new);
 
 		@Override
 		public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
@@ -87,42 +86,27 @@ public class PhoneState implements INBTSerializable<CompoundNBT> {
 		}
 
 		@Override
-		public INBT serializeNBT() {
-			return CAPABILITY.getStorage().writeNBT(CAPABILITY,
-					instance.orElseThrow(() -> new IllegalArgumentException("LazyOptional cannot be empty!")), null);
+		public CompoundTag serializeNBT() {
+			return instance.orElseThrow(() -> new IllegalArgumentException("LazyOptional cannot be empty!"))
+					.serializeNBT();
 		}
 
 		@Override
-		public void deserializeNBT(INBT nbt) {
-			CAPABILITY.getStorage().readNBT(CAPABILITY,
-					instance.orElseThrow(() -> new IllegalArgumentException("LazyOptional cannot be empty!")), null,
-					nbt);
+		public void deserializeNBT(CompoundTag nbt) {
+			instance.orElseThrow(() -> new IllegalArgumentException("LazyOptional cannot be empty!"))
+					.deserializeNBT(nbt);
 		}
 
 		public static final ResourceLocation LOCATION = new ResourceLocation(Main.MODID, "phonestorage");
 
 		@SubscribeEvent
 		public static void attachCapability(AttachCapabilitiesEvent<Entity> event) {
-			if (event.getObject() instanceof PlayerEntity)
+			if (event.getObject() instanceof Player)
 				event.addCapability(LOCATION, new PhoneStorageProvider());
 		}
 	}
 
-	public static class PhoneStateStorage implements IStorage<PhoneState> {
-
-		@Override
-		public INBT writeNBT(Capability<PhoneState> capability, PhoneState instance, Direction side) {
-			return instance.serializeNBT();
-
-		}
-
-		@Override
-		public void readNBT(Capability<PhoneState> capability, PhoneState instance, Direction side, INBT nbt) {
-			instance.deserializeNBT((CompoundNBT) nbt);
-		}
-	}
-
-	public static class TextMessage implements INBTSerializable<CompoundNBT> {
+	public static class TextMessage implements INBTSerializable<CompoundTag> {
 		private UUID sender;
 		private UUID messageId;
 		private String senderName;
@@ -138,37 +122,37 @@ public class PhoneState implements INBTSerializable<CompoundNBT> {
 			this.senderName = senderName;
 			this.text = text;
 		}
-		
+
 		public void handle(Phone phone) {
 			phone.recieveTextMessage(sender, senderName, text);
 		}
 
 		@Override
-		public CompoundNBT serializeNBT() {
-			CompoundNBT compound = new CompoundNBT();
-			compound.putUniqueId("sender", sender);
-			compound.putUniqueId("messageId", messageId);
+		public CompoundTag serializeNBT() {
+			var compound = new CompoundTag();
+			compound.putUUID("sender", sender);
+			compound.putUUID("messageId", messageId);
 			compound.putString("senderName", senderName);
 			compound.putString("text", text);
 			return compound;
 		}
 
 		@Override
-		public void deserializeNBT(CompoundNBT nbt) {
-			sender = nbt.getUniqueId("sender");
-			messageId = nbt.getUniqueId("messageId");
+		public void deserializeNBT(CompoundTag nbt) {
+			sender = nbt.getUUID("sender");
+			messageId = nbt.getUUID("messageId");
 			senderName = nbt.getString("senderName");
 			text = nbt.getString("text");
 		}
-		
-		public static ListNBT serializeTextMessages(List<TextMessage> messages) {
-			ListNBT msgs = new ListNBT();
+
+		public static ListTag serializeTextMessages(List<TextMessage> messages) {
+			var msgs = new ListTag();
 			for (TextMessage m : messages)
 				msgs.add(m.serializeNBT());
 			return msgs;
 		}
-		
-		public static List<TextMessage> deserializeTextMessages(ListNBT nbt) {
+
+		public static List<TextMessage> deserializeTextMessages(ListTag nbt) {
 			List<TextMessage> messages = new ArrayList<>();
 			for (int i = 0; i < nbt.size(); i++) {
 				TextMessage message = new TextMessage();

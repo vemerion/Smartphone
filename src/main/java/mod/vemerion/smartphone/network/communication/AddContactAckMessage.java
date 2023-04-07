@@ -5,10 +5,10 @@ import java.util.function.Supplier;
 
 import mod.vemerion.smartphone.phone.ICommunicator;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraftforge.network.NetworkEvent;
 
 public class AddContactAckMessage {
 
@@ -22,14 +22,14 @@ public class AddContactAckMessage {
 		this.success = success;
 	}
 
-	public void encode(final PacketBuffer buffer) {
-		buffer.writeUniqueId(uuid);
-		buffer.writeString(name);
+	public void encode(final FriendlyByteBuf buffer) {
+		buffer.writeUUID(uuid);
+		buffer.writeUtf(name);
 		buffer.writeBoolean(success);
 	}
 
-	public static AddContactAckMessage decode(final PacketBuffer buffer) {
-		return new AddContactAckMessage(buffer.readUniqueId(), buffer.readString(32767), buffer.readBoolean());
+	public static AddContactAckMessage decode(final FriendlyByteBuf buffer) {
+		return new AddContactAckMessage(buffer.readUUID(), buffer.readUtf(32767), buffer.readBoolean());
 	}
 
 	public void handle(final Supplier<NetworkEvent.Context> supplier) {
@@ -46,8 +46,8 @@ public class AddContactAckMessage {
 				@Override
 				public void run() {
 					Minecraft mc = Minecraft.getInstance();
-					if (mc != null && mc.currentScreen != null && mc.currentScreen instanceof ICommunicator) {
-						((ICommunicator) mc.currentScreen).recieveAddContactAck(uuid, name, success);
+					if (mc != null && mc.screen != null && mc.screen instanceof ICommunicator) {
+						((ICommunicator) mc.screen).recieveAddContactAck(uuid, name, success);
 					}
 				}
 			};

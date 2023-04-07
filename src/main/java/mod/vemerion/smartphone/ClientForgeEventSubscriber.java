@@ -1,20 +1,16 @@
 package mod.vemerion.smartphone;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-
 import mod.vemerion.smartphone.phone.Phone;
-import mod.vemerion.smartphone.renderer.PhoneRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.player.AbstractClientPlayerEntity;
-import net.minecraft.client.renderer.model.ItemCameraTransforms.TransformType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Hand;
-import net.minecraft.util.HandSide;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderHandEvent;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
+import net.minecraftforge.common.util.TransformationHelper;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
@@ -23,30 +19,30 @@ public class ClientForgeEventSubscriber {
 
 	@SubscribeEvent
 	public static void renderPhoneUse(RenderHandEvent event) {
-		AbstractClientPlayerEntity player = Minecraft.getInstance().player;
-		ItemStack itemStack = event.getItemStack();
-		Item item = itemStack.getItem();
-		float partialTicks = event.getPartialTicks();
-		if (item.equals(Main.SMARTPHONE_ITEM) && Minecraft.getInstance().currentScreen instanceof Phone) {
+		var mc = Minecraft.getInstance();
+		var player = mc.player;
+		var itemStack = event.getItemStack();
+		var item = itemStack.getItem();
+		float partialTicks = event.getPartialTick();
+		if (item.equals(ModInit.SMARTPHONE.get()) && mc.screen instanceof Phone) {
 			event.setCanceled(true);
 			return;
 		}
-		
-		if (item.equals(Main.SMARTPHONE_ITEM) && player.getActiveItemStack().equals(itemStack)) {
+
+		if (item.equals(ModInit.SMARTPHONE.get()) && player.getUseItem().equals(itemStack)) {
 			event.setCanceled(true);
-			HandSide side = event.getHand() == Hand.MAIN_HAND ? player.getPrimaryHand()
-					: player.getPrimaryHand().opposite();
-			float offset = side == HandSide.LEFT ? -1 : 1;
-			PhoneRenderer renderer = new PhoneRenderer();
-			int maxDuration = itemStack.getUseDuration();
-			float duration = (float) maxDuration - ((float) player.getItemInUseCount() - partialTicks + 1.0f);
-			float progress = MathHelper.clamp(duration / maxDuration, 0, 1);
-			MatrixStack matrix = event.getMatrixStack();
-			matrix.push();
+			var side = event.getHand() == InteractionHand.MAIN_HAND ? player.getMainArm()
+					: player.getMainArm().getOpposite();
+			float offset = side == HumanoidArm.LEFT ? -1 : 1;
+			var renderer = IClientItemExtensions.of(item).getCustomRenderer();
+			float progress = Mth.clamp((player.getTicksUsingItem() + partialTicks) / itemStack.getUseDuration(), 0, 1);
+			var matrix = event.getPoseStack();
+			matrix.pushPose();
 			matrix.translate(offset * (2 - 2 * progress), -1 + progress * 0.95, -3 + progress * 0.85);
-			matrix.rotate(new net.minecraft.util.math.vector.Quaternion(0, offset * (-90 + progress * 90), 0, true));
-			renderer.func_239207_a_(itemStack, TransformType.NONE, matrix, event.getBuffers(), event.getLight(), OverlayTexture.NO_OVERLAY);
-			matrix.pop();
+			matrix.mulPose(TransformationHelper.quatFromXYZ(0, offset * (-90 + progress * 90), 0, true));
+			renderer.renderByItem(itemStack, ItemDisplayContext.NONE, matrix, event.getMultiBufferSource(),
+					event.getPackedLight(), OverlayTexture.NO_OVERLAY);
+			matrix.popPose();
 		}
 	}
 }

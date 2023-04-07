@@ -5,20 +5,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.Button;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
-import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.NativeImage;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.ScreenShotHelper;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.Screenshot;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FastColor;
+import net.minecraft.util.Mth;
 
 public class WallpaperApp extends App {
 
@@ -91,7 +91,7 @@ public class WallpaperApp extends App {
 	}
 
 	@Override
-	public void render(MatrixStack matrix) {
+	public void render(PoseStack matrix) {
 		if (subApp != null) {
 			subApp.render(matrix);
 		} else {
@@ -112,7 +112,7 @@ public class WallpaperApp extends App {
 	}
 
 	@Override
-	public void deserializeNBT(CompoundNBT nbt) {
+	public void deserializeNBT(CompoundTag nbt) {
 		if (nbt.contains("hasCustomWallpaper")) {
 			hasCustomWallpaper = nbt.getBoolean("hasCustomWallpaper");
 		}
@@ -124,8 +124,8 @@ public class WallpaperApp extends App {
 	}
 
 	@Override
-	public CompoundNBT serializeNBT() {
-		CompoundNBT compound = new CompoundNBT();
+	public CompoundTag serializeNBT() {
+		var compound = new CompoundTag();
 		compound.putIntArray("wallpaper", fromWallpaper());
 		compound.putBoolean("hasCustomWallpaper", hasCustomWallpaper);
 		return compound;
@@ -223,8 +223,8 @@ public class WallpaperApp extends App {
 		}
 
 		private void canvasAction(float mouseX, float mouseY) {
-			int x = (int) MathHelper.lerp(mouseX / (CANVAS_SIZE * PhoneUtils.APP_WIDTH), 0, PhoneUtils.WALLPAPER_WIDTH);
-			int y = (int) MathHelper.lerp(mouseY / (CANVAS_SIZE * PhoneUtils.APP_HEIGHT), 0,
+			int x = (int) Mth.lerp(mouseX / (CANVAS_SIZE * PhoneUtils.APP_WIDTH), 0, PhoneUtils.WALLPAPER_WIDTH);
+			int y = (int) Mth.lerp(mouseY / (CANVAS_SIZE * PhoneUtils.APP_HEIGHT), 0,
 					PhoneUtils.WALLPAPER_HEIGHT);
 
 			if (x < PhoneUtils.WALLPAPER_WIDTH && y < PhoneUtils.WALLPAPER_HEIGHT && x >= 0 && y >= 0) {
@@ -238,7 +238,7 @@ public class WallpaperApp extends App {
 		}
 
 		@Override
-		public void render(MatrixStack matrix) {
+		public void render(PoseStack matrix) {
 			super.render(matrix);
 
 			brushButton.render();
@@ -304,16 +304,16 @@ public class WallpaperApp extends App {
 			photoTakenTimer = 40;
 			photoTakenMessage = "Wallpaper Updated!";
 			hasCustomWallpaper = true;
-			Minecraft mc = Minecraft.getInstance();
-			MainWindow window = mc.getMainWindow();
+			var mc = Minecraft.getInstance();
+			var window = mc.getWindow();
 
-			float windowWidth = window.getScaledWidth();
-			float windowHeight = window.getScaledHeight();
-			int bufferWidth = window.getFramebufferWidth();
-			int bufferHeight = window.getFramebufferHeight();
+			float windowWidth = window.getGuiScaledWidth();
+			float windowHeight = window.getGuiScaledHeight();
+			float bufferWidth = mc.getMainRenderTarget().viewWidth;
+			float bufferHeight = mc.getMainRenderTarget().viewHeight;
 
-			NativeImage photo = ScreenShotHelper.createScreenshot(bufferWidth, bufferHeight, mc.getFramebuffer());
-			if (photo.getFormat() != NativeImage.PixelFormat.RGBA) {
+			var photo = Screenshot.takeScreenshot(mc.getMainRenderTarget());
+			if (photo.format() != NativeImage.Format.RGBA) {
 				photoTakenMessage = "Failed to take photo!";
 				return;
 			}
@@ -323,7 +323,7 @@ public class WallpaperApp extends App {
 			int top = (int) ((windowHeight - PhoneUtils.SCREEN_BOTTON_OFFSET - PhoneUtils.SCREEN_HEIGHT) / windowHeight
 					* bufferHeight);
 			int right = (int) ((windowWidth * 0.5f + PhoneUtils.SCREEN_HORIZONTAL_CENTER_OFFSET) / windowWidth
-					* window.getFramebufferWidth());
+					* bufferWidth);
 			int bottom = (int) ((windowHeight - PhoneUtils.SCREEN_BOTTON_OFFSET) / windowHeight * bufferHeight);
 
 			int pixelWidth = (int) ((right - left) / (float) PhoneUtils.WALLPAPER_WIDTH);
@@ -331,8 +331,8 @@ public class WallpaperApp extends App {
 
 			for (int x = 0; x < PhoneUtils.WALLPAPER_WIDTH; x++) {
 				for (int y = 0; y < PhoneUtils.WALLPAPER_HEIGHT; y++) {
-					int pixelX = MathHelper.clamp(left + x * pixelWidth, 0, photo.getWidth());
-					int pixelY = MathHelper.clamp(top + y * pixelHeight, 0, photo.getHeight());
+					int pixelX = Mth.clamp(left + x * pixelWidth, 0, photo.getWidth());
+					int pixelY = Mth.clamp(top + y * pixelHeight, 0, photo.getHeight());
 					wallpaper[x][y] = fromNativeImageColor(photo.getPixelRGBA(pixelX, pixelY));
 				}
 			}
@@ -342,10 +342,10 @@ public class WallpaperApp extends App {
 		}
 
 		private int fromNativeImageColor(int pixelRGBA) {
-			int a = NativeImage.getAlpha(pixelRGBA);
-			int r = NativeImage.getRed(pixelRGBA);
-			int g = NativeImage.getGreen(pixelRGBA);
-			int b = NativeImage.getBlue(pixelRGBA);
+			int a = FastColor.ABGR32.m_266503_(pixelRGBA); // alpha
+			int r = FastColor.ABGR32.m_266313_(pixelRGBA); // Red
+			int g = FastColor.ABGR32.m_266446_(pixelRGBA); // Green
+			int b = FastColor.ABGR32.m_266247_(pixelRGBA); // Blue
 			return new Color(r, g, b, a).getRGB();
 		}
 
@@ -363,7 +363,7 @@ public class WallpaperApp extends App {
 		}
 
 		@Override
-		public void render(MatrixStack matrix) {
+		public void render(PoseStack matrix) {
 			super.render(matrix);
 			if (photoCountdown < 0)
 				capture.render();

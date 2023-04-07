@@ -2,21 +2,21 @@ package mod.vemerion.smartphone.phone.app;
 
 import java.util.Random;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.Font;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.util.INBTSerializable;
 
-public abstract class App implements INBTSerializable<CompoundNBT> {
+public abstract class App implements INBTSerializable<CompoundTag> {
 	
 	protected int ticksExisted;
 	protected Random rand = new Random();
 	protected Phone phone;
-	protected FontRenderer font;
+	protected Font font;
 	
 	public App(Phone phone) {
 		this.phone = phone;
@@ -30,7 +30,7 @@ public abstract class App implements INBTSerializable<CompoundNBT> {
 		ticksExisted++;
 	}
 	
-	public void render(MatrixStack matrix) {
+	public void render(PoseStack matrix) {
 		PhoneUtils.drawOnPhone(getBackground(), 0, 0, PhoneUtils.APP_WIDTH, PhoneUtils.APP_HEIGHT);
 	}
 	
@@ -50,12 +50,12 @@ public abstract class App implements INBTSerializable<CompoundNBT> {
 	}
 	
 	@Override
-	public CompoundNBT serializeNBT() {
-		return new CompoundNBT();
+	public CompoundTag serializeNBT() {
+		return new CompoundTag();
 	}
 	
 	@Override
-	public void deserializeNBT(CompoundNBT nbt) {		
+	public void deserializeNBT(CompoundTag nbt) {		
 	}
 
 }

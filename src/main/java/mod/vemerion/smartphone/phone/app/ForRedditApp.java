@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -19,24 +18,22 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.Button;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.IReorderingProcessor;
-import net.minecraft.util.JSONUtils;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.client.gui.Font;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
 
 public class ForRedditApp extends App {
 
@@ -139,7 +136,7 @@ public class ForRedditApp extends App {
 	}
 
 	@Override
-	public void render(MatrixStack matrix) {
+	public void render(PoseStack matrix) {
 		super.render(matrix);
 
 		if (subApp != null) {
@@ -158,31 +155,32 @@ public class ForRedditApp extends App {
 	}
 
 	private void createPosts(String data) {
-		JsonObject json = JSONUtils.getJsonObject(JSONUtils.fromJson(data), "data");
+		var json = GsonHelper
+				.getAsJsonObject(GsonHelper.convertToJsonObject(JsonParser.parseString(data), "top element"), "data");
 		pages = new ArrayList<>();
 		pages.add(new ArrayList<>());
 		int i = 0;
 		int y = TOP_OFFSET;
-		for (JsonElement e : JSONUtils.getJsonArray(json, "children")) {
-			JsonObject o = JSONUtils.getJsonObject(JSONUtils.getJsonObject(e, "post"), "data");
-			String title = JSONUtils.getString(o, "title");
+		for (var e : GsonHelper.getAsJsonArray(json, "children")) {
+			var o = GsonHelper.getAsJsonObject(GsonHelper.convertToJsonObject(e, "post"), "data");
+			var title = GsonHelper.getAsString(o, "title");
 			int height = PhoneUtils.textHeight(font, title, 0.5f, PhoneUtils.APP_WIDTH - 2) + 10;
 			if (y + height > PhoneUtils.APP_HEIGHT * 0.9) {
 				pages.add(new ArrayList<>());
 				i++;
 				y = TOP_OFFSET;
 			}
-			pages.get(i).add(new Post(phone, JSONUtils.getString(o, "title"), y, JSONUtils.getString(o, "selftext"),
-					JSONUtils.getString(o, "permalink")));
+			pages.get(i).add(new Post(phone, GsonHelper.getAsString(o, "title"), y,
+					GsonHelper.getAsString(o, "selftext"), GsonHelper.getAsString(o, "permalink")));
 			y += height;
 		}
 	}
 
 	@Override
-	public CompoundNBT serializeNBT() {
-		CompoundNBT compound = new CompoundNBT();
+	public CompoundTag serializeNBT() {
+		var compound = new CompoundTag();
 		if (id != null)
-			compound.putUniqueId("id", id);
+			compound.putUUID("id", id);
 		if (token != null) {
 			compound.putString("token", token);
 			compound.putLong("timestamp", timestamp);
@@ -191,9 +189,9 @@ public class ForRedditApp extends App {
 	}
 
 	@Override
-	public void deserializeNBT(CompoundNBT nbt) {
-		if (nbt.hasUniqueId("id"))
-			id = nbt.getUniqueId("id");
+	public void deserializeNBT(CompoundTag nbt) {
+		if (nbt.hasUUID("id"))
+			id = nbt.getUUID("id");
 		if (nbt.contains("token")) {
 			token = nbt.getString("token");
 			timestamp = nbt.getLong("timestamp");
@@ -262,58 +260,59 @@ public class ForRedditApp extends App {
 		}
 
 		private void createComments(String data) {
-			JsonArray jsonArray = JSONUtils.fromJson(new GsonBuilder().create(), new StringReader(data),
-					JsonArray.class, false);
-			JsonObject json = JSONUtils.getJsonObject(JSONUtils.getJsonObject(jsonArray.get(1), "comments"), "data");
+			JsonArray jsonArray = GsonHelper.convertToJsonArray(JsonParser.parseString(data), "data");
+			JsonObject json = GsonHelper.getAsJsonObject(GsonHelper.convertToJsonObject(jsonArray.get(1), "comments"),
+					"data");
 			comments = new ArrayList<>();
-			for (JsonElement e : JSONUtils.getJsonArray(json, "children")) {
-				JsonObject o = JSONUtils.getJsonObject(JSONUtils.getJsonObject(e, "comment"), "data");
+			for (JsonElement e : GsonHelper.getAsJsonArray(json, "children")) {
+				JsonObject o = GsonHelper.getAsJsonObject(GsonHelper.convertToJsonObject(e, "comment"), "data");
 				if (o.has("body")) {
-					String body = JSONUtils.getString(o, "body");
+					String body = GsonHelper.getAsString(o, "body");
 					comments.add(body);
 				}
 			}
 		}
 
 		@Override
-		public void render(MatrixStack matrix) {
+		public void render(PoseStack matrix) {
 			super.render(matrix);
 
 			backButton.render();
 			upButton.render();
 			downButton.render();
 
-			PhoneUtils.writeOnPhoneTrim(matrix, font, title, 25, 6, Color.BLACK, 1f, PhoneUtils.APP_WIDTH - 25, false, false);
+			PhoneUtils.writeOnPhoneTrim(matrix, font, title, 25, 6, Color.BLACK, 1f, PhoneUtils.APP_WIDTH - 25, false,
+					false);
 
 			int y = TOP_OFFSET - down * 50;
 
 			if (!selftext.isEmpty()) {
-				List<IReorderingProcessor> lines = font.trimStringToWidth(new StringTextComponent(selftext),
+				var lines = font.split(Component.literal(selftext),
 						(int) (PhoneUtils.fromVirtualWidth(PhoneUtils.APP_WIDTH - 2) / 0.6f));
-				for (IReorderingProcessor line : lines) {
+				for (var line : lines) {
 					if (y >= TOP_OFFSET && y < PhoneUtils.APP_HEIGHT * 0.85)
 						PhoneUtils.writeOnPhone(matrix, font, line, 1, y, Color.BLACK, 0.6f, false);
-					y += PhoneUtils.toVirtualHeight(font.FONT_HEIGHT * 0.6f);
+					y += PhoneUtils.toVirtualHeight(font.lineHeight * 0.6f);
 				}
-				
-				if (y >= TOP_OFFSET &&y < PhoneUtils.APP_HEIGHT * 0.85)
+
+				if (y >= TOP_OFFSET && y < PhoneUtils.APP_HEIGHT * 0.85)
 					PhoneUtils.drawOnPhone(LINE, 0, y + 5, PhoneUtils.APP_WIDTH, 2);
 				y += 10;
 			}
 
 			for (String c : comments) {
-				List<IReorderingProcessor> lines = font.trimStringToWidth(new StringTextComponent(c),
+				var lines = font.split(Component.literal(c),
 						(int) (PhoneUtils.fromVirtualWidth(PhoneUtils.APP_WIDTH - 2) / 0.5f));
-				for (IReorderingProcessor line : lines) {
+				for (var line : lines) {
 					if (y >= TOP_OFFSET && y < PhoneUtils.APP_HEIGHT * 0.85)
 						PhoneUtils.writeOnPhone(matrix, font, line, 1, y, Color.BLACK, 0.5f, false);
-					y += PhoneUtils.toVirtualHeight(font.FONT_HEIGHT * 0.5f);
+					y += PhoneUtils.toVirtualHeight(font.lineHeight * 0.5f);
 				}
 				if (y > PhoneUtils.APP_HEIGHT * 0.85)
 					break;
-				
+
 				if (y >= TOP_OFFSET)
-				PhoneUtils.drawOnPhone(LINE, 0, y + 5, PhoneUtils.APP_WIDTH, 2);
+					PhoneUtils.drawOnPhone(LINE, 0, y + 5, PhoneUtils.APP_WIDTH, 2);
 				y += 10;
 			}
 		}
@@ -341,10 +340,10 @@ public class ForRedditApp extends App {
 	private static class PostButton extends Button {
 
 		private String title;
-		private FontRenderer font;
+		private Font font;
 
 		public PostButton(Rectangle rectangle, Supplier<ResourceLocation> icon, Phone phone, Runnable runnable,
-				String title, FontRenderer font) {
+				String title, Font font) {
 			super(rectangle, icon, phone, runnable);
 			this.title = title;
 			this.font = font;
@@ -353,7 +352,8 @@ public class ForRedditApp extends App {
 		@Override
 		public void render() {
 			Color c = rectangle.contains(phone.getMouseX(), phone.getMouseY()) ? Color.BLUE : Color.BLACK;
-			PhoneUtils.writeOnPhoneWrap(new MatrixStack(), font, title, 1, rectangle.y, c, 0.5f, PhoneUtils.APP_WIDTH - 2, false);
+			PhoneUtils.writeOnPhoneWrap(new PoseStack(), font, title, 1, rectangle.y, c, 0.5f, PhoneUtils.APP_WIDTH - 2,
+					false);
 			PhoneUtils.drawOnPhone(LINE, 0, rectangle.y + rectangle.height + 5, PhoneUtils.APP_WIDTH, 2);
 		}
 	}
@@ -436,8 +436,8 @@ public class ForRedditApp extends App {
 				Integer responseCode = connection.getResponseCode();
 
 				if (responseCode == HttpURLConnection.HTTP_OK) {
-					JsonObject json = new JsonParser().parse(getResponse(connection)).getAsJsonObject();
-					token = JSONUtils.getString(json, "access_token");
+					var json = JsonParser.parseString(getResponse(connection)).getAsJsonObject();
+					token = GsonHelper.getAsString(json, "access_token");
 					timestamp = System.currentTimeMillis();
 				}
 			}

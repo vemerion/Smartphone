@@ -3,7 +3,7 @@ package mod.vemerion.smartphone.phone.app;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.Phone;
@@ -11,9 +11,9 @@ import mod.vemerion.smartphone.phone.utils.Button;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SoundEvent;
-import net.minecraft.util.SoundEvents;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 
 public class JukeboxApp extends App {
 	private static final SoundEvent[] MUSIC = { SoundEvents.MUSIC_DISC_11, SoundEvents.MUSIC_DISC_13,
@@ -58,13 +58,14 @@ public class JukeboxApp extends App {
 		for (int i = 0; i < MUSIC_COUNT; i++) {
 			float x = (i % 3) * BUTTON_SIZE + 1;
 			float y = (i / 3) * BUTTON_SIZE;
-			SoundEvent music = MUSIC[i];
-			ResourceLocation icon = ICONS[i];
+			var music = MUSIC[i];
+			var icon = ICONS[i];
 			musicButtons.add(new Button(new Rectangle(x, y, BUTTON_SIZE), () -> icon, phone, () -> {
 				if (activeMusic != null)
-					activeMusic.stop();
-				activeMusic = new JukeboxAppMusic(Minecraft.getInstance().player, music);
-				Minecraft.getInstance().getSoundHandler().play(activeMusic);
+					activeMusic.finish();
+				var mc = Minecraft.getInstance();
+				activeMusic = new JukeboxAppMusic(mc.player, music);
+				Minecraft.getInstance().getSoundManager().play(activeMusic);
 			}));
 		}
 
@@ -72,7 +73,7 @@ public class JukeboxApp extends App {
 				new Rectangle((MUSIC_COUNT % 3) * BUTTON_SIZE + 1, (MUSIC_COUNT / 3) * BUTTON_SIZE, BUTTON_SIZE),
 				() -> CANCEL_MUSIC, phone, () -> {
 					if (activeMusic != null)
-						activeMusic.stop();
+						activeMusic.finish();
 				});
 	}
 
@@ -80,26 +81,26 @@ public class JukeboxApp extends App {
 	public void tick() {
 		super.tick();
 
-		for (Button b : musicButtons)
+		for (var b : musicButtons)
 			b.tick();
-		
+
 		cancelMusicButton.tick();
 	}
 
 	@Override
-	public void render(MatrixStack matrix) {
+	public void render(PoseStack matrix) {
 		super.render(matrix);
 
-		for (Button b : musicButtons)
+		for (var b : musicButtons)
 			b.render();
-		
+
 		cancelMusicButton.render();
 	}
 
 	@Override
 	public void shutdown() {
 		if (activeMusic != null)
-			activeMusic.stop();
+			activeMusic.finish();
 	}
 
 	@Override

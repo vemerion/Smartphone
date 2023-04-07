@@ -4,11 +4,9 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 import mod.vemerion.smartphone.network.Network;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
-import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.PacketDistributor;
 
 public class AddContactMessage {
 	
@@ -18,26 +16,26 @@ public class AddContactMessage {
 		this.contactName = contact;
 	}
 
-	public void encode(final PacketBuffer buffer) {
-		buffer.writeString(contactName);
+	public void encode(final FriendlyByteBuf buffer) {
+		buffer.writeUtf(contactName);
 	}
 
-	public static AddContactMessage decode(final PacketBuffer buffer) {
-		return new AddContactMessage(buffer.readString(20));
+	public static AddContactMessage decode(final FriendlyByteBuf buffer) {
+		return new AddContactMessage(buffer.readUtf(20));
 	}
 
 	public void handle(final Supplier<NetworkEvent.Context> supplier) {
-		final NetworkEvent.Context context = supplier.get();
+		final var context = supplier.get();
 		context.setPacketHandled(true);
 		context.enqueueWork(() -> {
-			ServerPlayerEntity sender = context.getSender();
+			var sender = context.getSender();
 			if (sender != null) {
-				PlayerEntity contact = sender.getServer().getPlayerList().getPlayerByUsername(contactName);
-				UUID uuid = UUID.randomUUID();
-				String name = "";
+				var contact = sender.getServer().getPlayerList().getPlayerByName(contactName);
+				var uuid = UUID.randomUUID();
+				var name = "";
 				boolean success = false;
 				if (contact != null) {
-					uuid = contact.getUniqueID();
+					uuid = contact.getUUID();
 					name = contact.getName().getString();
 					success = true;
 				}

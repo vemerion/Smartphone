@@ -3,14 +3,11 @@ package mod.vemerion.smartphone.network.communication;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import com.mojang.authlib.GameProfile;
-
 import mod.vemerion.smartphone.capability.PhoneState;
 import mod.vemerion.smartphone.network.Network;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
-import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.PacketDistributor;
 
 public class SendTextMessage {
 
@@ -22,29 +19,29 @@ public class SendTextMessage {
 		this.message = message;
 	}
 
-	public void encode(final PacketBuffer buffer) {
-		buffer.writeUniqueId(destination);
-		buffer.writeString(message);
+	public void encode(final FriendlyByteBuf buffer) {
+		buffer.writeUUID(destination);
+		buffer.writeUtf(message);
 	}
 
-	public static SendTextMessage decode(final PacketBuffer buffer) {
-		return new SendTextMessage(buffer.readUniqueId(), buffer.readString(55));
+	public static SendTextMessage decode(final FriendlyByteBuf buffer) {
+		return new SendTextMessage(buffer.readUUID(), buffer.readUtf(55));
 	}
 
 	public void handle(final Supplier<NetworkEvent.Context> supplier) {
-		final NetworkEvent.Context context = supplier.get();
+		final var context = supplier.get();
 		context.setPacketHandled(true);
 		context.enqueueWork(() -> {
-			ServerPlayerEntity sender = context.getSender();
+			var sender = context.getSender();
 			if (sender != null) {
-				ServerPlayerEntity reciever = sender.getServer().getPlayerList().getPlayerByUUID(destination);
+				var reciever = sender.getServer().getPlayerList().getPlayer(destination);
 				if (reciever != null) {
-					UUID senderId = sender.getUniqueID();
-					UUID messageId = UUID.randomUUID();
-					GameProfile senderProfile = reciever.getServer().getPlayerProfileCache().getProfileByUUID(senderId);
-					String sourceName = senderProfile != null ? senderProfile.getName() : "";
+					var senderId = sender.getUUID();
+					var messageId = UUID.randomUUID();
+					var senderProfile = reciever.getServer().getProfileCache().get(senderId);
+					var sourceName = senderProfile.isPresent() ? senderProfile.get().getName() : "";
 					Network.INSTANCE.send(PacketDistributor.PLAYER.with(() -> reciever),
-							new RecieveTextMessage(sender.getUniqueID(), messageId, sourceName, message));
+							new RecieveTextMessage(sender.getUUID(), messageId, sourceName, message));
 					reciever.getCapability(PhoneState.CAPABILITY).ifPresent(s -> {
 						s.storeTextMessage(senderId, messageId, sourceName, message);
 					});

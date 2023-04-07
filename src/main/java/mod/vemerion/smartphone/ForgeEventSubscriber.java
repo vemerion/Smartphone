@@ -11,7 +11,7 @@ public class ForgeEventSubscriber {
 
 	@SubscribeEvent
 	public static void clonePhoneState(PlayerEvent.Clone event) {
-		event.getPlayer().getCapability(PhoneState.CAPABILITY).ifPresent(newState -> {
+		event.getEntity().getCapability(PhoneState.CAPABILITY).ifPresent(newState -> {
 			event.getOriginal().getCapability(PhoneState.CAPABILITY).ifPresent(oldState -> {
 				newState.deserializeNBT(oldState.serializeNBT());
 			});

@@ -1,36 +1,36 @@
 {
-  "catch_apple_sound": {
+  "catch_apple": {
     "category": "player",
     "sounds": [
       {
-        "name": "smartphone:catch_apple_sound",
+        "name": "smartphone:catch_apple",
         "stream": false
       }
     ]
   },
-  "click_sound": {
+  "click": {
     "category": "player",
     "sounds": [
       {
-        "name": "smartphone:click_sound",
+        "name": "smartphone:click",
         "stream": false
       }
     ]
   },
-  "jump_sound": {
+  "jump": {
     "category": "player",
     "sounds": [
       {
-        "name": "smartphone:jump_sound",
+        "name": "smartphone:jump",
         "stream": false
       }
     ]
   },
-  "write_sound": {
+  "write": {
     "category": "player",
     "sounds": [
       {
-        "name": "smartphone:write_sound",
+        "name": "smartphone:write",
         "stream": false
       }
     ]

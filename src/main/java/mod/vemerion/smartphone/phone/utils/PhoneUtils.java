@@ -1,22 +1,20 @@
 package mod.vemerion.smartphone.phone.utils;
 
 import java.awt.Color;
-import java.util.List;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexFormat;
 
 import mod.vemerion.smartphone.Main;
-import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldVertexBufferUploader;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.util.IReorderingProcessor;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 
 public class PhoneUtils {
 
@@ -57,18 +55,19 @@ public class PhoneUtils {
 		int g = color.getGreen();
 		int b = color.getBlue();
 		int a = color.getAlpha();
-		Minecraft mc = Minecraft.getInstance();
-		mc.getTextureManager().bindTexture(texture);
-		BufferBuilder builder = Tessellator.getInstance().getBuffer();
-		builder.begin(7, DefaultVertexFormats.POSITION_COLOR_TEX);
-		builder.pos(x, y + height, Z).color(r, g, b, a).tex(texX, texY + texHeight).endVertex();
-		builder.pos(x + width, y + height, Z).color(r, g, b, a).tex(texX + texWidth, texY + texHeight).endVertex();
-		builder.pos(x + width, y, Z).color(r, g, b, a).tex(texX + texWidth, texY).endVertex();
-		builder.pos(x, y, Z).color(r, g, b, a).tex(texX, texY).endVertex();
-		builder.finishDrawing();
+		RenderSystem.setShader(GameRenderer::getPositionColorTexShader);
+		RenderSystem.setShaderTexture(0, texture);
 		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
 
-		WorldVertexBufferUploader.draw(builder);
+		var tesselator = Tesselator.getInstance();
+		var builder = tesselator.getBuilder();
+		builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEX);
+		builder.vertex(x, y + height, Z).color(r, g, b, a).uv(texX, texY + texHeight).endVertex();
+		builder.vertex(x + width, y + height, Z).color(r, g, b, a).uv(texX + texWidth, texY + texHeight).endVertex();
+		builder.vertex(x + width, y, Z).color(r, g, b, a).uv(texX + texWidth, texY).endVertex();
+		builder.vertex(x, y, Z).color(r, g, b, a).uv(texX, texY).endVertex();
+		tesselator.end();
 	}
 
 	public static void draw(ResourceLocation texture, float x, float y, float width, float height) {
@@ -77,9 +76,9 @@ public class PhoneUtils {
 
 	public static void drawOnPhone(ResourceLocation texture, float x, float y, float width, float height, float texX,
 			float texY, float texWidth, float texHeight, Color color) {
-		MainWindow window = Minecraft.getInstance().getMainWindow();
-		float windowWidth = window.getScaledWidth();
-		float windowHeight = window.getScaledHeight();
+		var window = Minecraft.getInstance().getWindow();
+		float windowWidth = window.getGuiScaledWidth();
+		float windowHeight = window.getGuiScaledHeight();
 		x = windowWidth * 0.5f - SCREEN_HORIZONTAL_CENTER_OFFSET + (x / APP_WIDTH) * SCREEN_WIDTH;
 		y = windowHeight - SCREEN_BOTTON_OFFSET - SCREEN_HEIGHT + (y / APP_HEIGHT) * SCREEN_HEIGHT;
 		width = (width / APP_WIDTH) * SCREEN_WIDTH;
@@ -116,52 +115,50 @@ public class PhoneUtils {
 		}
 	}
 
-	public static void writeOnPhone(MatrixStack matrix, FontRenderer font, IReorderingProcessor text, float x, float y,
+	public static void writeOnPhone(PoseStack matrix, Font font, FormattedCharSequence text, float x, float y,
 			Color color, float size, boolean center) {
-		MainWindow window = Minecraft.getInstance().getMainWindow();
-		float windowWidth = window.getScaledWidth();
-		float windowHeight = window.getScaledHeight();
+		var window = Minecraft.getInstance().getWindow();
+		float windowWidth = window.getGuiScaledWidth();
+		float windowHeight = window.getGuiScaledHeight();
 		x = windowWidth * 0.5f - SCREEN_HORIZONTAL_CENTER_OFFSET + (x / APP_WIDTH) * SCREEN_WIDTH;
 		y = windowHeight - SCREEN_BOTTON_OFFSET - SCREEN_HEIGHT + (y / APP_HEIGHT) * SCREEN_HEIGHT;
 
-		matrix.push();
-		matrix.translate(x - (center ? font.func_243245_a(text) * size / 2 : 0), y, 0);
+		matrix.pushPose();
+		matrix.translate(x - (center ? font.width(text) * size / 2 : 0), y, 0);
 		matrix.scale(size, size, size);
 
-		font.func_238422_b_(matrix, text, 0, 0, color.getRGB());
+		font.draw(matrix, text, 0, 0, color.getRGB());
 
-		matrix.pop();
+		matrix.popPose();
 	}
 
-	public static void writeOnPhone(MatrixStack matrix, FontRenderer font, String text, float x, float y, Color color,
-			float size, boolean center) {
-		List<IReorderingProcessor> lines = font.trimStringToWidth(new StringTextComponent(text), Integer.MAX_VALUE);
+	public static void writeOnPhone(PoseStack matrix, Font font, String text, float x, float y, Color color, float size,
+			boolean center) {
+		var lines = font.split(Component.literal(text), Integer.MAX_VALUE);
 		if (!lines.isEmpty())
 			writeOnPhone(matrix, font, lines.get(0), x, y, color, size, center);
 	}
 
-	public static void writeOnPhoneTrim(MatrixStack matrix, FontRenderer font, String text, float x, float y,
-			Color color, float size, float width, boolean reverse, boolean center) {
+	public static void writeOnPhoneTrim(PoseStack matrix, Font font, String text, float x, float y, Color color,
+			float size, float width, boolean reverse, boolean center) {
 		int realWidth = (int) fromVirtualWidth(width / size);
-		List<IReorderingProcessor> lines = font
-				.trimStringToWidth(new StringTextComponent(font.func_238413_a_(text, realWidth, reverse)), realWidth);
+		var lines = font.split(Component.literal(font.plainSubstrByWidth(text, realWidth, reverse)), realWidth);
 		if (!lines.isEmpty())
 			writeOnPhone(matrix, font, lines.get(0), x, y, color, size, center);
 	}
 
-	public static void writeOnPhoneWrap(MatrixStack matrix, FontRenderer font, String text, float x, float y,
-			Color color, float size, float width, boolean center) {
-		List<IReorderingProcessor> lines = font.trimStringToWidth(new StringTextComponent(text),
-				(int) fromVirtualWidth(width / size));
+	public static void writeOnPhoneWrap(PoseStack matrix, Font font, String text, float x, float y, Color color,
+			float size, float width, boolean center) {
+		var lines = font.split(Component.literal(text), (int) fromVirtualWidth(width / size));
 		for (int i = 0; i < lines.size(); i++) {
-			writeOnPhone(matrix, font, lines.get(i), x, y + font.FONT_HEIGHT * i * size * 1.3f, color, size, center);
+			writeOnPhone(matrix, font, lines.get(i), x, y + font.lineHeight * i * size * 1.3f, color, size, center);
 		}
 	}
-	
-	public static int textHeight(FontRenderer font, String text, float size, float width) {
-		return (int) (font.getWordWrappedHeight(text, (int) (PhoneUtils.fromVirtualWidth(width) / size)) * size * 1.3f);
+
+	public static int textHeight(Font font, String text, float size, float width) {
+		return (int) (font.wordWrapHeight(text, (int) (PhoneUtils.fromVirtualWidth(width) / size)) * size * 1.3f);
 	}
-	
+
 	// converts virtual app width to window width
 	public static float fromVirtualWidth(float width) {
 		return width / APP_WIDTH * SCREEN_WIDTH;
@@ -171,7 +168,7 @@ public class PhoneUtils {
 	public static float toVirtualWidth(float width) {
 		return width * APP_WIDTH / SCREEN_WIDTH;
 	}
-	
+
 	public static float toVirtualHeight(float height) {
 		return height * APP_HEIGHT / SCREEN_HEIGHT;
 	}

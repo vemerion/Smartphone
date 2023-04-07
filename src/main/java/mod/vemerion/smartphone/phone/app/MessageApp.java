@@ -3,14 +3,12 @@ package mod.vemerion.smartphone.phone.app;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.lwjgl.glfw.GLFW;
 
 import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.minecraft.MinecraftProfileTexture;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.phone.ICommunicator;
@@ -18,13 +16,12 @@ import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.Button;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
-import net.minecraft.client.resources.SkinManager;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.nbt.StringNBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SharedConstants;
-import net.minecraftforge.common.util.Constants;
+import net.minecraft.SharedConstants;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
 
 public class MessageApp extends App implements ICommunicator {
 
@@ -47,7 +44,7 @@ public class MessageApp extends App implements ICommunicator {
 			"textures/gui/message_app/add_contact_text_field.png");
 	private static final ResourceLocation MESSAGE_BUBBLE = new ResourceLocation(Main.MODID,
 			"textures/gui/message_app/message_bubble.png");
-	
+
 	private static final Color YOU_COLOR = new Color(85, 255, 255);
 	private static final Color OTHER_COLOR = new Color(150, 255, 120);
 
@@ -129,7 +126,7 @@ public class MessageApp extends App implements ICommunicator {
 			}
 
 			for (char c : phone.getCharsTyped()) {
-				if (SharedConstants.isAllowedCharacter(c) && addContactText.length() < 20) {
+				if (SharedConstants.isAllowedChatCharacter(c) && addContactText.length() < 20) {
 					addContactText += Character.toString(c);
 				}
 			}
@@ -151,7 +148,7 @@ public class MessageApp extends App implements ICommunicator {
 	}
 
 	@Override
-	public void render(MatrixStack matrix) {
+	public void render(PoseStack matrix) {
 		super.render(matrix);
 
 		if (subApp != null) {
@@ -168,10 +165,10 @@ public class MessageApp extends App implements ICommunicator {
 			addContactButton.render();
 			int textX = ADD_CONTACT_BUTTON_X + ADD_CONTACT_BUTTON_SIZE + 1;
 			PhoneUtils.drawOnPhone(ADD_CONTACT_TEXT_FIELD, textX - 2, PhoneUtils.APP_HEIGHT - 20 - 2,
-					ADD_CONTACT_TEXT_WIDTH + 2, font.FONT_HEIGHT, 0, 0, 1, 1);
+					ADD_CONTACT_TEXT_WIDTH + 2, font.lineHeight, 0, 0, 1, 1);
 
-			PhoneUtils.writeOnPhoneTrim(matrix, font, addContactText, textX, PhoneUtils.APP_HEIGHT - 20, Color.BLACK, 0.5f,
-					ADD_CONTACT_TEXT_WIDTH, true, false);
+			PhoneUtils.writeOnPhoneTrim(matrix, font, addContactText, textX, PhoneUtils.APP_HEIGHT - 20, Color.BLACK,
+					0.5f, ADD_CONTACT_TEXT_WIDTH, true, false);
 
 			if (toastTimer > 0)
 				PhoneUtils.writeOnPhone(matrix, font, toast, PhoneUtils.APP_WIDTH / 2,
@@ -223,9 +220,9 @@ public class MessageApp extends App implements ICommunicator {
 	}
 
 	@Override
-	public CompoundNBT serializeNBT() {
-		CompoundNBT compound = new CompoundNBT();
-		ListNBT infos = new ListNBT();
+	public CompoundTag serializeNBT() {
+		var compound = new CompoundTag();
+		var infos = new ListTag();
 		for (ContactInfo contact : contacts)
 			infos.add(contact.serializeNBT());
 		compound.put("contacts", infos);
@@ -234,8 +231,8 @@ public class MessageApp extends App implements ICommunicator {
 	}
 
 	@Override
-	public void deserializeNBT(CompoundNBT nbt) {
-		ListNBT infos = nbt.getList("contacts", Constants.NBT.TAG_COMPOUND);
+	public void deserializeNBT(CompoundTag nbt) {
+		var infos = nbt.getList("contacts", Tag.TAG_COMPOUND);
 		for (int i = 0; i < infos.size(); i++) {
 			ContactInfo contact = new ContactInfo(phone, infos.getCompound(i));
 			contacts.add(contact);
@@ -259,7 +256,7 @@ public class MessageApp extends App implements ICommunicator {
 		private String message = "";
 		private boolean hasUnreadMessages = true;
 
-		public ContactInfo(Phone phone, CompoundNBT compound) {
+		public ContactInfo(Phone phone, CompoundTag compound) {
 			super(phone);
 			this.y = contacts.size() % CONTACT_BUTTONS_PER_PAGE * (CONTACT_BUTTON_SIZE + CONTACT_BUTTON_BORDER)
 					+ CONTACT_BUTTON_BORDER;
@@ -300,11 +297,11 @@ public class MessageApp extends App implements ICommunicator {
 			button.tick();
 		}
 
-		private void renderButton(MatrixStack matrix) {
+		private void renderButton(PoseStack matrix) {
 			button.render();
 
-			PhoneUtils.writeOnPhoneTrim(matrix, font, name, CONTACT_BUTTON_SIZE + CONTACT_BUTTON_BORDER + 1, y + 1, Color.BLACK,
-					0.8f, PhoneUtils.APP_WIDTH - CONTACT_BUTTON_SIZE - 1, false, false);
+			PhoneUtils.writeOnPhoneTrim(matrix, font, name, CONTACT_BUTTON_SIZE + CONTACT_BUTTON_BORDER + 1, y + 1,
+					Color.BLACK, 0.8f, PhoneUtils.APP_WIDTH - CONTACT_BUTTON_SIZE - 1, false, false);
 
 			if (hasUnreadMessages)
 				button.renderAlert();
@@ -316,7 +313,7 @@ public class MessageApp extends App implements ICommunicator {
 			backButton.tick();
 
 			for (char c : phone.getCharsTyped()) {
-				if (message.length() < 55 && SharedConstants.isAllowedCharacter(c)) {
+				if (message.length() < 55 && SharedConstants.isAllowedChatCharacter(c)) {
 					message += Character.toString(c);
 				}
 			}
@@ -333,7 +330,7 @@ public class MessageApp extends App implements ICommunicator {
 		}
 
 		@Override
-		public void render(MatrixStack matrix) {
+		public void render(PoseStack matrix) {
 			super.render(matrix);
 			backButton.render();
 
@@ -354,10 +351,11 @@ public class MessageApp extends App implements ICommunicator {
 				PhoneUtils.writeOnPhoneWrap(matrix, font, m, x, y, Color.BLACK, 0.5f, MESSAGE_WIDTH, false);
 			}
 
-			PhoneUtils.writeOnPhoneTrim(matrix, font, name, 25, 6, Color.BLACK, 1, PhoneUtils.APP_WIDTH - 25, false, false);
-
-			PhoneUtils.writeOnPhoneWrap(matrix, font, message, 1, MESSAGE_LINE + 8, Color.BLACK, 0.8f, PhoneUtils.APP_WIDTH - 2,
+			PhoneUtils.writeOnPhoneTrim(matrix, font, name, 25, 6, Color.BLACK, 1, PhoneUtils.APP_WIDTH - 25, false,
 					false);
+
+			PhoneUtils.writeOnPhoneWrap(matrix, font, message, 1, MESSAGE_LINE + 8, Color.BLACK, 0.8f,
+					PhoneUtils.APP_WIDTH - 2, false);
 		}
 
 		@Override
@@ -371,13 +369,13 @@ public class MessageApp extends App implements ICommunicator {
 		}
 
 		@Override
-		public CompoundNBT serializeNBT() {
-			CompoundNBT compound = new CompoundNBT();
-			compound.putUniqueId("contactId", uuid);
+		public CompoundTag serializeNBT() {
+			var compound = new CompoundTag();
+			compound.putUUID("contactId", uuid);
 			compound.putString("contactName", name);
-			ListNBT msgs = new ListNBT();
+			var msgs = new ListTag();
 			for (int i = Math.max(0, messages.size() - 10); i < messages.size(); i++) {
-				msgs.add(StringNBT.valueOf(messages.get(i)));
+				msgs.add(StringTag.valueOf(messages.get(i)));
 			}
 			compound.put("messages", msgs);
 			compound.putBoolean("hasUnreadMessages", hasUnreadMessages);
@@ -385,13 +383,14 @@ public class MessageApp extends App implements ICommunicator {
 		}
 
 		@Override
-		public void deserializeNBT(CompoundNBT nbt) {
-			uuid = nbt.getUniqueId("contactId");
+		public void deserializeNBT(CompoundTag nbt) {
+			uuid = nbt.getUUID("contactId");
 			name = nbt.getString("contactName");
-			ListNBT msgs = nbt.getList("messages", Constants.NBT.TAG_STRING);
+			var msgs = nbt.getList("messages", Tag.TAG_STRING);
 			messages = new ArrayList<>();
 			for (int i = 0; i < msgs.size(); i++) {
 				messages.add(msgs.getString(i));
+
 			}
 			if (nbt.contains("hasUnreadMessages"))
 				hasUnreadMessages = nbt.getBoolean("hasUnreadMessages");
@@ -415,16 +414,8 @@ public class MessageApp extends App implements ICommunicator {
 		private void loadIcon(GameProfile profile) {
 			if (profile.getId() == null)
 				return;
-			SkinManager skinManager = phone.getMinecraft().getSkinManager();
-			Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> skins = skinManager.loadSkinFromCache(profile);
-			if (skins.containsKey(MinecraftProfileTexture.Type.SKIN))
-				icon = () -> skinManager.loadSkin(skins.get(MinecraftProfileTexture.Type.SKIN),
-						MinecraftProfileTexture.Type.SKIN);
-			else
-				skinManager.loadProfileTextures(profile, (type, location, texture) -> {
-					if (type == MinecraftProfileTexture.Type.SKIN)
-						icon = () -> location;
-				}, true);
+			var skinManager = phone.getMinecraft().getSkinManager();
+			icon = () -> skinManager.getInsecureSkinLocation(profile);
 		}
 
 		private void renderAlert() {

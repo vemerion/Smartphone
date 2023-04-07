@@ -3,9 +3,9 @@ package mod.vemerion.smartphone.phone.utils;
 import java.awt.Color;
 import java.util.function.Supplier;
 
-import mod.vemerion.smartphone.Main;
+import mod.vemerion.smartphone.ModInit;
 import mod.vemerion.smartphone.phone.Phone;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class Button {
 	protected static final Color HOVER_COLOR = new Color(100, 100, 100);
@@ -18,7 +18,8 @@ public class Button {
 	private Color color = Color.WHITE;
 	protected Rectangle texBounds;
 
-	public Button(Rectangle rectangle, Supplier<ResourceLocation> icon, Phone phone, Runnable runnable, Rectangle texBounds) {
+	public Button(Rectangle rectangle, Supplier<ResourceLocation> icon, Phone phone, Runnable runnable,
+			Rectangle texBounds) {
 		this.rectangle = rectangle;
 		this.icon = icon;
 		this.phone = phone;
@@ -42,7 +43,7 @@ public class Button {
 		}
 		isLeftDownPrev = isLeftDown;
 	}
-	
+
 	protected Color getColor() {
 		return color;
 	}
@@ -54,7 +55,7 @@ public class Button {
 	}
 
 	private void onPress() {
-		phone.playSound(Main.CLICK_SOUND, 2f);
+		phone.playSound(ModInit.CLICK.get(), 2f);
 		runnable.run();
 	}
 }

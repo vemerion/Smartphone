@@ -6,16 +6,17 @@ import java.util.List;
 
 import org.lwjgl.glfw.GLFW;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import mod.vemerion.smartphone.Main;
+import mod.vemerion.smartphone.ModInit;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Position;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SoundEvents;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 
 public class RunnerApp extends App {
 
@@ -48,7 +49,7 @@ public class RunnerApp extends App {
 			return;
 		
 		if (ticksExisted % 3 == 0)
-			phone.playSound(SoundEvents.BLOCK_GRASS_STEP, 1);
+			phone.playSound(SoundEvents.GRASS_STEP, 1);
 		
 		for (Position fence : fences) {
 			fence.y += 4;
@@ -61,7 +62,7 @@ public class RunnerApp extends App {
 
 		if (phone.isKeyDown(GLFW.GLFW_KEY_SPACE) && z < 0.01f) {
 			jump = 1f;
-			phone.playSound(Main.JUMP_SOUND, 0.6f);
+			phone.playSound(ModInit.JUMP.get(), 0.6f);
 		}
 
 		if (z < 0.1f) {
@@ -71,7 +72,7 @@ public class RunnerApp extends App {
 				player.x += 3;
 		}
 
-		player.x = MathHelper.clamp(player.x, PLAYER_SIZE / 2, 100 - PLAYER_SIZE / 2);
+		player.x = Mth.clamp(player.x, PLAYER_SIZE / 2, 100 - PLAYER_SIZE / 2);
 
 		z += jump - 0.7f;
 		jump *= 0.97;
@@ -114,7 +115,7 @@ public class RunnerApp extends App {
 	}
 
 	@Override
-	public void render(MatrixStack matrix) {
+	public void render(PoseStack matrix) {
 		PhoneUtils.drawOnPhone(getBackground(), 0, 0, PhoneUtils.APP_WIDTH, PhoneUtils.APP_HEIGHT, 0,
 				1 - ticksExisted / 100f % 100f, 1, 0.5f);
 

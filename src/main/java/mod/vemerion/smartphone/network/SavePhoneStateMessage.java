@@ -3,32 +3,31 @@ package mod.vemerion.smartphone.network;
 import java.util.function.Supplier;
 
 import mod.vemerion.smartphone.capability.PhoneState;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.network.NetworkEvent;
 
 public class SavePhoneStateMessage {
-	
-	private CompoundNBT state;
-	
-	public SavePhoneStateMessage(CompoundNBT state) {
+
+	private CompoundTag state;
+
+	public SavePhoneStateMessage(CompoundTag state) {
 		this.state = state;
 	}
 
-	public void encode(final PacketBuffer buffer) {
-		buffer.writeCompoundTag(state);
+	public void encode(final FriendlyByteBuf buffer) {
+		buffer.writeNbt(state);
 	}
 
-	public static SavePhoneStateMessage decode(final PacketBuffer buffer) {
-		return new SavePhoneStateMessage(buffer.readCompoundTag());
+	public static SavePhoneStateMessage decode(final FriendlyByteBuf buffer) {
+		return new SavePhoneStateMessage(buffer.readNbt());
 	}
 
 	public void handle(final Supplier<NetworkEvent.Context> supplier) {
 		final NetworkEvent.Context context = supplier.get();
 		context.setPacketHandled(true);
 		context.enqueueWork(() -> {
-			PlayerEntity player = context.getSender();
+			var player = context.getSender();
 			if (player != null) {
 				player.getCapability(PhoneState.CAPABILITY).ifPresent(s -> s.setState(state));
 			}

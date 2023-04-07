@@ -1,21 +1,25 @@
 package mod.vemerion.smartphone;
 
+import java.util.function.Consumer;
+
 import mod.vemerion.smartphone.capability.PhoneState;
 import mod.vemerion.smartphone.renderer.PhoneRenderer;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 
 public class SmartphoneItem extends Item {
 
 	public SmartphoneItem() {
-		super(new Item.Properties().maxStackSize(1).group(ItemGroup.MISC).setISTER(() -> PhoneRenderer::new));
+		super(new Item.Properties().stacksTo(1));
 	}
 
 	@Override
@@ -24,12 +28,12 @@ public class SmartphoneItem extends Item {
 	}
 
 	@Override
-	public ItemStack onItemUseFinish(ItemStack stack, World worldIn, LivingEntity entityLiving) {
-		if (entityLiving instanceof PlayerEntity) {
-			PlayerEntity player = (PlayerEntity) entityLiving;
-			if (!worldIn.isRemote) {
+	public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entityLiving) {
+		if (entityLiving instanceof Player) {
+			var player = (Player) entityLiving;
+			if (!level.isClientSide) {
 				player.getCapability(PhoneState.CAPABILITY).ifPresent(s -> {
-					s.sendLoadStateMessage((ServerPlayerEntity) player);
+					s.sendLoadStateMessage((ServerPlayer) player);
 				});
 			}
 		}
@@ -37,10 +41,20 @@ public class SmartphoneItem extends Item {
 	}
 
 	@Override
-	public ActionResult<ItemStack> onItemRightClick(World worldIn, PlayerEntity playerIn, Hand handIn) {
-		ItemStack itemstack = playerIn.getHeldItem(handIn);
-		playerIn.setActiveHand(handIn);
-		return ActionResult.resultSuccess(itemstack);
+	public InteractionResultHolder<ItemStack> use(Level pLevel, Player pPlayer, InteractionHand pHand) {
+		var itemstack = pPlayer.getItemInHand(pHand);
+		pPlayer.startUsingItem(pHand);
+		return InteractionResultHolder.success(itemstack);
 	}
 
+	@Override
+	public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+		consumer.accept(new IClientItemExtensions() {
+			@Override
+			public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+				var mc = Minecraft.getInstance();
+				return new PhoneRenderer(mc.getBlockEntityRenderDispatcher(), mc.getEntityModels());
+			}
+		});
+	}
 }

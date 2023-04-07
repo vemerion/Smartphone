@@ -6,16 +6,17 @@ import java.util.List;
 
 import org.lwjgl.glfw.GLFW;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import mod.vemerion.smartphone.Main;
+import mod.vemerion.smartphone.ModInit;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Position;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SoundEvents;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 
 public class CatchAppleApp extends App {
 	private static final ResourceLocation APPLE = new ResourceLocation("minecraft", "textures/item/apple.png");
@@ -55,7 +56,7 @@ public class CatchAppleApp extends App {
 			if (new Rectangle(player.x, player.y, PLAYER_SIZE).intersect(new Rectangle(apple.x, apple.y, APPLE_SIZE))) {
 				apples.remove(i);
 				score++;
-				phone.playSound(Main.CATCH_APPLE_SOUND, 0.45f);
+				phone.playSound(ModInit.CATCH_APPLE.get(), 0.45f);
 			} else if (apple.y > 175) {
 				apples.remove(i);
 			}
@@ -71,21 +72,21 @@ public class CatchAppleApp extends App {
 			ticksRunning++;
 			player.x -= 3;
 			if (ticksRunning % 3 == 0)
-				phone.playSound(SoundEvents.BLOCK_GRASS_STEP, 1);
+				phone.playSound(SoundEvents.GRASS_STEP, 1);
 		} else if (phone.isKeyDown(GLFW.GLFW_KEY_RIGHT)) {
 			facingLeft = false;
 			ticksRunning++;
 			player.x += 3;
 			if (ticksRunning % 3 == 0)
-				phone.playSound(SoundEvents.BLOCK_GRASS_STEP, 1);
+				phone.playSound(SoundEvents.GRASS_STEP, 1);
 		} else {
 			ticksRunning = 0;
 		}
-		player.x = MathHelper.clamp(player.x, 0, 100 - PLAYER_SIZE);
+		player.x = Mth.clamp(player.x, 0, 100 - PLAYER_SIZE);
 	}
 
 	@Override
-	public void render(MatrixStack matrix) {
+	public void render(PoseStack matrix) {
 		super.render(matrix);
 
 		for (Position apple : apples) {

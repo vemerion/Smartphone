@@ -6,12 +6,13 @@ import java.util.List;
 
 import org.lwjgl.glfw.GLFW;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import mod.vemerion.smartphone.Main;
+import mod.vemerion.smartphone.ModInit;
 import mod.vemerion.smartphone.phone.Phone;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class VillagerChatApp extends App {
 
@@ -40,7 +41,7 @@ public class VillagerChatApp extends App {
 		List<Integer> keys = phone.getKeys();
 		
 		if (keys.size() > 0 && message.length() < 45 && ticksExisted % 3 == 0)
-			phone.playSound(Main.WRITE_SOUND, 0.3f);
+			phone.playSound(ModInit.WRITE.get(), 0.3f);
 		
 		for (int key : phone.getKeys()) {
 			if (message.length() < 45 && key != GLFW.GLFW_KEY_ENTER) {
@@ -55,12 +56,12 @@ public class VillagerChatApp extends App {
 
 		if (rand.nextDouble() < 0.02) {
 			chat.add("V" + RESPONSES[rand.nextInt(RESPONSES.length)]);
-			phone.playSound(Main.CATCH_APPLE_SOUND, 0.3f);
+			phone.playSound(ModInit.CATCH_APPLE.get(), 0.3f);
 		}
 	}
 
 	@Override
-	public void render(MatrixStack matrix) {
+	public void render(PoseStack matrix) {
 		super.render(matrix);
 		printMsg(matrix, message, 2, 175, new Color(0, 180, 255), 15);
 
@@ -76,7 +77,7 @@ public class VillagerChatApp extends App {
 		}
 	}
 
-	private void printMsg(MatrixStack matrix, String msg, float x, float y, Color color, int maxLength) {
+	private void printMsg(PoseStack matrix, String msg, float x, float y, Color color, int maxLength) {
 		double count = Math.ceil(msg.length() / (float) maxLength) + 0.1;
 		for (int i = 0; i < count; i++) {
 			PhoneUtils.writeOnPhone(matrix, font, msg.substring(0, Math.min(maxLength, msg.length())), x, y + i * 8.5f, color, 0.75f, false);

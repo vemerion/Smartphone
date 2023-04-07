@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 
 import mod.vemerion.smartphone.Main;
 import mod.vemerion.smartphone.network.Network;
@@ -24,22 +24,20 @@ import mod.vemerion.smartphone.phone.app.WallpaperApp;
 import mod.vemerion.smartphone.phone.utils.Button;
 import mod.vemerion.smartphone.phone.utils.PhoneUtils;
 import mod.vemerion.smartphone.phone.utils.Rectangle;
-import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.util.SoundEvent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraftforge.common.util.Constants;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraftforge.common.util.INBTSerializable;
-import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraftforge.network.PacketDistributor;
 
-public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICommunicator {
+public class Phone extends Screen implements INBTSerializable<CompoundTag>, ICommunicator {
 	private static final ResourceLocation PHONE_TEXTURE = new ResourceLocation(Main.MODID,
 			"textures/gui/smartphone.png");
 	private static final ResourceLocation PHONE_BACKGROUND = new ResourceLocation(Main.MODID,
@@ -68,7 +66,7 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 	private List<ICommunicator> communicators;
 
 	public Phone() {
-		super(new StringTextComponent(""));
+		super(Component.literal(""));
 
 		communicators = new ArrayList<>();
 		
@@ -105,7 +103,7 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 				activeApp.suspend();
 			activeApp = null;
 		});
-		shutdownButton = new Button(SHUTDOWN_BUTTON, () -> SHUTDOWN_BUTTON_TEXTURE, this, () -> closeScreen());
+		shutdownButton = new Button(SHUTDOWN_BUTTON, () -> SHUTDOWN_BUTTON_TEXTURE, this, () -> onClose());
 	}
 	
 	@Override
@@ -122,10 +120,10 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 	}
 
 	public void playSound(SoundEvent sound, float volume) {
-		Minecraft mc = Minecraft.getInstance();
-		PlayerEntity player = mc.player;
-		Minecraft.getInstance().world.playSound(player, player.getPosX(), player.getPosY(), player.getPosZ(), sound,
-				SoundCategory.PLAYERS, volume, 0.8f + player.getRNG().nextFloat() * 0.4f);
+		var mc = Minecraft.getInstance();
+		var player = mc.player;
+		mc.level.playSound(player, player.getX(), player.getY(), player.getZ(), sound,
+				SoundSource.PLAYERS, volume, 0.8f + player.getRandom().nextFloat() * 0.4f);
 	}
 
 	private boolean atHomeScreen() {
@@ -216,35 +214,35 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 	}
 
 	public float getMouseX() {
-		Minecraft mc = Minecraft.getInstance();
-		MainWindow window = mc.getMainWindow();
+		var mc = Minecraft.getInstance();
+		var window = mc.getWindow();
 
-		float x = (float) mc.mouseHelper.getMouseX() * (float) window.getScaledWidth() / (float) window.getWidth();
-		float center = Minecraft.getInstance().getMainWindow().getScaledWidth() / 2;
+		float x = (float) mc.mouseHandler.xpos() * (float) window.getGuiScaledWidth() / (float) window.getWidth();
+		float center = window.getGuiScaledWidth() / 2;
 		float left = center - PhoneUtils.SCREEN_HORIZONTAL_CENTER_OFFSET;
 		return ((x - left) / PhoneUtils.SCREEN_WIDTH) * PhoneUtils.APP_WIDTH;
 	}
 
 	public float getMouseY() {
-		Minecraft mc = Minecraft.getInstance();
-		MainWindow window = mc.getMainWindow();
+		var mc = Minecraft.getInstance();
+		var window = mc.getWindow();
 
-		float y = (float) mc.mouseHelper.getMouseY() * (float) window.getScaledHeight() / (float) window.getHeight();
-		float bottom = Minecraft.getInstance().getMainWindow().getScaledHeight();
+		float y = (float) mc.mouseHandler.ypos() * (float) window.getGuiScaledHeight() / (float) window.getHeight();
+		float bottom = window.getGuiScaledHeight();
 		float top = bottom - PhoneUtils.SCREEN_BOTTON_OFFSET - PhoneUtils.SCREEN_HEIGHT;
 		return ((y - top) / PhoneUtils.SCREEN_HEIGHT) * PhoneUtils.APP_HEIGHT;
 	}
 
 	@Override
-	public void render(MatrixStack matrix, int mouseX, int mouseY, float partialTicks) {
+	public void render(PoseStack matrix, int mouseX, int mouseY, float partialTicks) {
 		super.render(matrix, mouseX, mouseY, partialTicks);
 		render(matrix);
 	}
 
-	private void render(MatrixStack matrix) {
-		MainWindow window = Minecraft.getInstance().getMainWindow();
-		float windowWidth = window.getScaledWidth();
-		float windowHeight = window.getScaledHeight();
+	private void render(PoseStack matrix) {
+		var window = Minecraft.getInstance().getWindow();
+		float windowWidth = window.getGuiScaledWidth();
+		float windowHeight = window.getGuiScaledHeight();
 
 
 		if (atHomeScreen()) {
@@ -278,7 +276,7 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 		}
 	}
 	
-	public FontRenderer getFont() {
+	public Font getFont() {
 		return font;
 	}
 
@@ -288,9 +286,9 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 	}
 
 	@Override
-	public CompoundNBT serializeNBT() {
-		CompoundNBT compound = new CompoundNBT();
-		ListNBT list = new ListNBT();
+	public CompoundTag serializeNBT() {
+		var compound = new CompoundTag();
+		var list = new ListTag();
 		for (int i = 0; i < apps.size(); i++) {
 			list.add(apps.get(i).serializeNBT());
 		}
@@ -299,8 +297,8 @@ public class Phone extends Screen implements INBTSerializable<CompoundNBT>, ICom
 	}
 
 	@Override
-	public void deserializeNBT(CompoundNBT nbt) {
-		ListNBT list = nbt.getList("apps", Constants.NBT.TAG_COMPOUND);
+	public void deserializeNBT(CompoundTag nbt) {
+		var list = nbt.getList("apps", Tag.TAG_COMPOUND);
 		for (int i = 0; i < list.size(); i++) {
 			apps.get(i).deserializeNBT(list.getCompound(i));
 		}
